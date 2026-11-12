@@ -1,0 +1,16 @@
+import { apiClient } from './apiClient';
+
+export interface RentalOverview { equipment: { total: number; available: number }; activeRentals: number; overdueRentals: number; rentalValue: number; outstanding: number }
+export interface RentalEquipment { _id: string; branchId: string; name: string; category: string; code: string; unit: string; totalQuantity: number; availableQuantity: number; dailyRate: number; depositPerUnit: number; itemType?: 'main' | 'accessory'; compatibleWith?: string; condition: 'good' | 'maintenance' | 'retired' }
+export type PaymentMethod = 'cash' | 'mobile_money' | 'bank_transfer' | 'card' | 'other';
+export interface Rental { _id: string; branchId: string; rentalNumber: string; customerName: string; customerPhone: string; customerEmail?: string; projectLocation?: string; driverName?: string; startDate: string; dueDate: string; returnedAt?: string; daysUsed?: number; subtotal: number; deposit: number; deliveryCharge?: number; discount?: number; additionalCharges?: number; amountPaid: number; status: 'active' | 'returned' | 'cancelled'; paymentStatus: 'unpaid' | 'partial' | 'paid'; notes?: string; returnNotes?: string; items: Array<{ equipmentId: string; name: string; itemType?: 'main' | 'accessory'; compatibleWith?: string; quantity: number; dailyRate?: number; days: number; lineTotal: number }>; payments?: Array<{ amount: number; method: PaymentMethod; recordedAt: string }>; activity?: Array<{ type: string; description: string; occurredAt: string }> }
+
+export async function getRentalData() {
+  const [overview, equipment, rentals] = await Promise.all([apiClient.get('/rentals/overview'), apiClient.get('/rentals/equipment'), apiClient.get('/rentals')]);
+  return { overview: overview.data as RentalOverview, equipment: equipment.data.items as RentalEquipment[], rentals: rentals.data.items as Rental[] };
+}
+export async function addRentalEquipment(input: { branchId: string; name: string; category: string; code: string; unit: string; totalQuantity: number; dailyRate: number; depositPerUnit: number; itemType: 'main' | 'accessory'; compatibleWith: string }) { await apiClient.post('/rentals/equipment', input); }
+export async function addHFrameAccessoryCatalog(input: { branchId: string; items: Array<{ code: string; totalQuantity: number; dailyRate: number; depositPerUnit: number }> }) { await apiClient.post('/rentals/equipment/h-frame-catalog', input); }
+export async function updateRentalEquipment(id: string, input: { condition?: RentalEquipment['condition']; totalQuantity?: number; dailyRate?: number; depositPerUnit?: number }) { await apiClient.patch(`/rentals/equipment/${id}`, input); }
+export async function createRental(input: { branchId: string; customerId: string; projectLocation: string; driverName: string; startDate: string; dueDate: string; amountPaid: number; paymentMethod: PaymentMethod; notes: string; items: Array<{ equipmentId: string; quantity: number }> }) { await apiClient.post('/rentals', input); }
+export async function updateRental(id: string, input: { status?: 'returned' | 'cancelled'; paymentAmount?: number; paymentMethod?: PaymentMethod; daysUsed?: number; dueDate?: string; additionalCharge?: number; chargeReason?: string; returnNotes?: string }) { await apiClient.patch(`/rentals/${id}`, input); }

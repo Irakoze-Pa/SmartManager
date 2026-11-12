@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+[data-platform-view="businesses"] > section:nth-of-type(1),
+[data-platform-view="businesses"] > section:nth-of-type(3),
+[data-platform-view="users"] > section:nth-of-type(1),
+[data-platform-view="users"] > section:nth-of-type(2) {
+  display: none;
+}
+
+[data-platform-view="overview"] > section:nth-of-type(2),
+[data-platform-view="overview"] > section:nth-of-type(3) {
+  display: none;
+}
+
+[data-platform-view="businesses"] > [data-overview-insights],
+[data-platform-view="users"] > [data-overview-insights] {
+  display: none;
+}
+
+@theme {
+  --color-brand-charcoal-950: #1c1c1c;
+  --color-brand-charcoal-900: #242424;
+  --color-brand-charcoal-800: #353535;
+  --color-brand-orange-600: #e75b0b;
+  --color-brand-orange-500: #f97316;
+  --color-brand-orange-400: #fb923c;
+  --color-brand-cream-50: #fffaf5;
+  --font-sans: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+:root {
+  color: #172033;
+  background: #f5f7fb;
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* Light-first workspace palette with a dark navigation rail and action orange. */
+.smartmanager-theme {
+  color: #172033;
+  background: #f5f7fb;
+  color-scheme: light;
+}
+
+.smartmanager-theme.dark-mode {
+  color: #e5e7eb;
+  background: #09090b;
+  color-scheme: dark;
+}
+
+.dark-mode[class*="bg-[#f5f7fb]"],
+.dark-mode [class*="bg-[#f5f7fb]"] { background-color: #09090b !important; }
+.dark-mode [class*="bg-white"] { background-color: #18181b !important; }
+.dark-mode [class*="bg-slate-50"],
+.dark-mode [class*="bg-stone-50"],
+.dark-mode [class*="bg-slate-100"],
+.dark-mode [class*="bg-stone-100"] { background-color: #202024 !important; }
+.dark-mode [class*="text-slate-950"],
+.dark-mode [class*="text-slate-900"],
+.dark-mode [class*="text-slate-800"],
+.dark-mode [class*="text-slate-700"],
+.dark-mode [class*="text-stone-950"],
+.dark-mode [class*="text-stone-900"],
+.dark-mode [class*="text-stone-800"],
+.dark-mode [class*="text-stone-700"],
+.dark-mode [class*="text-brand-charcoal"] { color: #f4f4f5 !important; }
+.dark-mode [class*="text-slate-600"],
+.dark-mode [class*="text-stone-600"] { color: #a1a1aa !important; }
+.dark-mode [class*="text-slate-500"],
+.dark-mode [class*="text-stone-500"] { color: #a1a1aa !important; }
+.dark-mode [class*="text-slate-400"],
+.dark-mode [class*="text-stone-400"] { color: #9ca3af !important; }
+.dark-mode [class*="border-slate-"],
+.dark-mode [class*="border-stone-"] { border-color: #303036 !important; }
+.dark-mode input,
+.dark-mode select,
+.dark-mode textarea {
+  border-color: #3f3f46;
+  background: #101012;
+  color: #f4f4f5;
+}
+.dark-mode table tbody tr:hover { background: #202024; }
+.dark-mode ::-webkit-scrollbar-track { background: #101012; }
+.dark-mode ::-webkit-scrollbar-thumb { background: #3f3f46; border-color: #101012; }
+
+.smartmanager-theme input,
+.smartmanager-theme select,
+.smartmanager-theme textarea {
+  color: #172033;
+}
+
+.smartmanager-theme input::placeholder,
+.smartmanager-theme textarea::placeholder { color: #94a3b8; }
+.smartmanager-theme table tbody tr:hover { background: #f8fafc; }
+
+/* Rentals intentionally use a focused dark work surface inside the light shell. */
+.rental-workspace input,
+.rental-workspace select,
+.rental-workspace textarea {
+  border-color: #3f3f46;
+  background: #101010;
+  color: #fff;
+}
+.rental-workspace input::placeholder,
+.rental-workspace textarea::placeholder { color: #71717a; }
+.rental-workspace table tbody tr:hover { background: #1d1d1d; }
+.smartmanager-theme main section,
+.smartmanager-theme main article,
+.smartmanager-theme main aside,
+.smartmanager-theme main form {
+  scroll-margin-top: 96px;
+}
+.smartmanager-theme button,
+.smartmanager-theme a {
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 160ms;
+}
+.smartmanager-theme button:not(:disabled):active,
+.smartmanager-theme a:active { transform: translateY(1px); }
+.smartmanager-theme ::-webkit-scrollbar { width: 9px; height: 9px; }
+.smartmanager-theme ::-webkit-scrollbar-track { background: #f1f5f9; }
+.smartmanager-theme ::-webkit-scrollbar-thumb { background: #cbd5e1; border: 2px solid #f1f5f9; border-radius: 999px; }
+.smartmanager-theme ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+.smartmanager-theme a:focus-visible,
+.smartmanager-theme button:focus-visible { outline-color: rgb(255 107 53 / 55%); }
+
+.smartmanager-theme #sale-document {
+  background: white !important;
+  color: #1c1c1c !important;
+  color-scheme: light;
+}
+.smartmanager-theme #sale-document [class*="text-"] { color: inherit; }
+.smartmanager-theme #accounting-report-document {
+  background: white !important;
+  color: #0f172a !important;
+  color-scheme: light;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.smartmanager-theme #accounting-report-document [class*="text-slate-9"] { color: #0f172a !important; }
+.smartmanager-theme #accounting-report-document [class*="text-slate-8"],
+.smartmanager-theme #accounting-report-document [class*="text-slate-7"] { color: #334155 !important; }
+.smartmanager-theme #accounting-report-document [class*="text-slate-5"],
+.smartmanager-theme #accounting-report-document [class*="text-slate-4"] { color: #64748b !important; }
+.smartmanager-theme #accounting-report-document [class*="bg-slate-50"] { background: #f8fafc !important; }
+.smartmanager-theme #accounting-report-document [class*="bg-slate-100"] { background: #f1f5f9 !important; }
+.smartmanager-theme #accounting-report-document [class*="border-slate-"] { border-color: #cbd5e1 !important; }
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+@media print {
+  body > * { visibility: hidden; }
+  #sale-document, #sale-document *,
+  #rental-document, #rental-document *,
+  #accounting-report-document, #accounting-report-document *,
+  #corporate-table-document, #corporate-table-document * { visibility: visible; }
+  #sale-document,
+  #rental-document,
+  #accounting-report-document,
+  #corporate-table-document { position: absolute; inset: 0; width: 100%; }
+  @page { size: A4; margin: 14mm; }
+}
+
+@keyframes loader {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(50%); }
+  100% { transform: translateX(210%); }
+}
+
+::selection {
+  color: white;
+  background: var(--color-brand-orange-500);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgb(249 115 22 / 35%);
+  outline-offset: 3px;
+}
+
