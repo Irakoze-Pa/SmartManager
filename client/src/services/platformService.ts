@@ -1,8 +1,8 @@
 import axios from 'axios';
+import { apiBaseUrl } from './apiClient';
 import type { PlatformAdmin, PlatformBusiness, PlatformSummary, PlatformUser, RegisterRequest, SubscriptionPlan, SubscriptionStatus } from '../types/api';
 
-const baseURL = import.meta.env.VITE_API_URL?.trim() || 'http://localhost:7310/api';
-const platformApi = axios.create({ baseURL, timeout: 10_000, headers: { 'Content-Type': 'application/json' } });
+const platformApi = axios.create({ baseURL: apiBaseUrl, timeout: 10_000, headers: { 'Content-Type': 'application/json' } });
 platformApi.interceptors.request.use((config) => {
   const token = window.localStorage.getItem('smartshop_platform_session');
   if (token) config.headers.Authorization = `Bearer ${token}`;

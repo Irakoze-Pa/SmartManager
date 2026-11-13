@@ -32,6 +32,8 @@ export const createApp = (): express.Express => {
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   app.use('/api', apiRouter);
+  // Keep older deployed clients working when their API base URL omits `/api`.
+  app.use(apiRouter);
   app.use(notFound);
   app.use(errorHandler);
 
