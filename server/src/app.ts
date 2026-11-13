@@ -9,7 +9,10 @@ import { apiRouter } from './routes/index.js';
 
 export const createApp = (): express.Express => {
   const app = express();
-  const configuredOrigins = new Set(env.CLIENT_ORIGIN.split(',').map((origin) => origin.trim()));
+  const configuredOrigins = new Set([
+    ...env.CLIENT_ORIGIN.split(',').map((origin) => origin.trim()),
+    'https://smart-manager-lilac.vercel.app',
+  ]);
   const isLocalDevelopmentOrigin = (origin: string): boolean =>
     env.NODE_ENV === 'development' && /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 

@@ -29,6 +29,7 @@ apiClient.interceptors.response.use(
 
 export const getApiErrorMessage = (error: unknown, fallback: string): string => {
   if (!axios.isAxiosError(error)) return fallback;
+  if (error.code === 'ERR_NETWORK') return `Cannot reach the API at ${apiBaseUrl}. Check the deployed API URL and allowed website origin.`;
   const data: unknown = error.response?.data;
   if (typeof data !== 'object' || data === null || !('error' in data)) return fallback;
   const apiError = data.error;
