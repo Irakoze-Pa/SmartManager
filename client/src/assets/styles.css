@@ -25,64 +25,181 @@
   --color-brand-orange-500: #f97316;
   --color-brand-orange-400: #fb923c;
   --color-brand-cream-50: #fffaf5;
+  --color-brand-canvas: #f4f6f9;
+  --color-brand-line: #e6eaf0;
   --font-sans: "Inter", "Avenir Next", "Segoe UI", sans-serif;
 }
 
 :root {
   color: #172033;
-  background: #f5f7fb;
+  background: #f4f6f9;
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Light-first workspace palette with a dark navigation rail and action orange. */
-.smartmanager-theme {
-  color: #172033;
-  background: #f5f7fb;
+/* Theme tokens keep the light and dark palettes consistent across every route. */
+:root,
+[data-theme="light"] {
   color-scheme: light;
+  --ui-canvas: #f4f6f9;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #f8fafc;
+  --ui-surface-raised: #ffffff;
+  --ui-text: #172033;
+  --ui-text-strong: #101828;
+  --ui-text-muted: #64748b;
+  --ui-text-subtle: #94a3b8;
+  --ui-line: #e2e8f0;
+  --ui-line-soft: #edf1f5;
+  --ui-control: #ffffff;
+  --ui-hover: #f1f5f9;
+  --ui-shadow: 15 23 42;
 }
 
-.smartmanager-theme.dark-mode {
-  color: #e5e7eb;
-  background: #09090b;
+[data-theme="dark"] {
   color-scheme: dark;
+  --ui-canvas: #111318;
+  --ui-surface: #191c22;
+  --ui-surface-muted: #20242c;
+  --ui-surface-raised: #22262e;
+  --ui-text: #d8dee9;
+  --ui-text-strong: #f4f6fa;
+  --ui-text-muted: #a1aaba;
+  --ui-text-subtle: #7f8a9b;
+  --ui-line: #343a46;
+  --ui-line-soft: #2b303a;
+  --ui-control: #15181e;
+  --ui-hover: #272c35;
+  --ui-shadow: 0 0 0;
 }
 
-.dark-mode[class*="bg-[#f5f7fb]"],
-.dark-mode [class*="bg-[#f5f7fb]"] { background-color: #09090b !important; }
-.dark-mode [class*="bg-white"] { background-color: #18181b !important; }
-.dark-mode [class*="bg-slate-50"],
-.dark-mode [class*="bg-stone-50"],
-.dark-mode [class*="bg-slate-100"],
-.dark-mode [class*="bg-stone-100"] { background-color: #202024 !important; }
-.dark-mode [class*="text-slate-950"],
-.dark-mode [class*="text-slate-900"],
-.dark-mode [class*="text-slate-800"],
-.dark-mode [class*="text-slate-700"],
-.dark-mode [class*="text-stone-950"],
-.dark-mode [class*="text-stone-900"],
-.dark-mode [class*="text-stone-800"],
-.dark-mode [class*="text-stone-700"],
-.dark-mode [class*="text-brand-charcoal"] { color: #f4f4f5 !important; }
-.dark-mode [class*="text-slate-600"],
-.dark-mode [class*="text-stone-600"] { color: #a1a1aa !important; }
-.dark-mode [class*="text-slate-500"],
-.dark-mode [class*="text-stone-500"] { color: #a1a1aa !important; }
-.dark-mode [class*="text-slate-400"],
-.dark-mode [class*="text-stone-400"] { color: #9ca3af !important; }
-.dark-mode [class*="border-slate-"],
-.dark-mode [class*="border-stone-"] { border-color: #303036 !important; }
-.dark-mode input,
-.dark-mode select,
-.dark-mode textarea {
-  border-color: #3f3f46;
-  background: #101012;
-  color: #f4f4f5;
+.smartmanager-theme {
+  color: var(--ui-text);
+  background-color: var(--ui-canvas);
+  color-scheme: inherit;
+  transition: color 180ms ease, background-color 180ms ease;
 }
-.dark-mode table tbody tr:hover { background: #202024; }
-.dark-mode ::-webkit-scrollbar-track { background: #101012; }
-.dark-mode ::-webkit-scrollbar-thumb { background: #3f3f46; border-color: #101012; }
+
+[data-theme="dark"] .smartmanager-theme .workspace-header {
+  background-color: rgb(25 28 34 / 92%) !important;
+  border-color: var(--ui-line) !important;
+}
+[data-theme="dark"] .smartmanager-theme .workspace-header [class*="text-slate-"] { color: var(--ui-text-muted) !important; }
+[data-theme="dark"] .smartmanager-theme .workspace-header [class*="text-slate-950"],
+[data-theme="dark"] .smartmanager-theme .workspace-header [class*="text-slate-700"] { color: var(--ui-text-strong) !important; }
+[data-theme="dark"] .smartmanager-theme .workspace-header button {
+  background-color: var(--ui-surface-raised);
+  border-color: var(--ui-line);
+  color: var(--ui-text-muted);
+}
+[data-theme="dark"] .smartmanager-theme .workspace-header button:hover { background-color: var(--ui-hover); color: #fdba74; }
+[data-theme="dark"] .smartmanager-theme [aria-label="Mobile navigation"] {
+  background-color: rgb(25 28 34 / 96%) !important;
+  border-color: var(--ui-line) !important;
+}
+[data-theme="dark"] .smartmanager-theme [aria-label="Mobile navigation"] a:not([class*="bg-brand-orange"]){ color: var(--ui-text-muted); }
+
+/* Scope neutral utility colors to the app shell. Semantic colors (success,
+   warning, danger, and orange actions) remain recognizable in both themes. */
+[data-theme="dark"] .smartmanager-theme main [class~="bg-white"],
+[data-theme="dark"] .smartmanager-theme main [class~="bg-white/90"],
+[data-theme="dark"] .smartmanager-theme main [class~="bg-white/95"] { background-color: var(--ui-surface) !important; }
+[data-theme="dark"] .smartmanager-theme main [class~="bg-slate-50"],
+[data-theme="dark"] .smartmanager-theme main [class~="bg-stone-50"],
+[data-theme="dark"] .smartmanager-theme main [class~="bg-slate-100"],
+[data-theme="dark"] .smartmanager-theme main [class~="bg-stone-100"] { background-color: var(--ui-surface-muted) !important; }
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-950"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-900"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-800"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-700"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-950"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-900"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-800"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-700"],
+[data-theme="dark"] .smartmanager-theme main [class*="text-brand-charcoal"] { color: var(--ui-text-strong) !important; }
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-600"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-500"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-600"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-500"] { color: var(--ui-text-muted) !important; }
+[data-theme="dark"] .smartmanager-theme main [class~="text-slate-400"],
+[data-theme="dark"] .smartmanager-theme main [class~="text-stone-400"] { color: var(--ui-text-subtle) !important; }
+[data-theme="dark"] .smartmanager-theme main [class*="border-slate-"],
+[data-theme="dark"] .smartmanager-theme main [class*="border-stone-"] { border-color: var(--ui-line) !important; }
+[data-theme="dark"] .smartmanager-theme main input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] .smartmanager-theme main select,
+[data-theme="dark"] .smartmanager-theme main textarea {
+  border-color: var(--ui-line);
+  background-color: var(--ui-control);
+  color: var(--ui-text-strong);
+}
+[data-theme="dark"] .smartmanager-theme main input::placeholder,
+[data-theme="dark"] .smartmanager-theme main textarea::placeholder { color: var(--ui-text-subtle); }
+[data-theme="dark"] .smartmanager-theme main table tbody tr:hover { background-color: var(--ui-hover); }
+[data-theme="dark"] .smartmanager-theme main hr { border-color: var(--ui-line-soft); }
+
+/* Auth pages participate in the selected theme while keeping their brand panel. */
+.smartmanager-theme .auth-surface { background-color: var(--ui-surface); color: var(--ui-text); border-color: var(--ui-line); }
+[data-theme="dark"] .smartmanager-theme .auth-canvas { background-color: var(--ui-canvas); }
+[data-theme="dark"] .smartmanager-theme .auth-surface :is(h1,h2,h3,label) { color: var(--ui-text-strong); }
+[data-theme="dark"] .smartmanager-theme .auth-surface :is(p,small) { color: var(--ui-text-muted); }
+[data-theme="dark"] .smartmanager-theme .auth-surface input,
+[data-theme="dark"] .smartmanager-theme .auth-surface select { background-color: var(--ui-control); color: var(--ui-text-strong); border-color: var(--ui-line); }
+
+/* Platform admin uses its own legacy dark utility palette; map its neutral
+   surfaces and title colors explicitly when the platform light mode is chosen. */
+[data-theme="light"].platform-dashboard { color: #172033; }
+[data-theme="light"] .platform-header {
+  background: rgb(255 255 255 / 94%) !important;
+  border-color: #e2e8f0 !important;
+  color: #172033 !important;
+}
+[data-theme="light"] .platform-header .platform-brand-label,
+[data-theme="light"] .platform-header .platform-role { color: #64748b !important; }
+[data-theme="light"] .platform-theme-toggle,
+[data-theme="light"] .platform-header button:last-child {
+  background-color: #fff !important;
+  border-color: #dbe2ea !important;
+  color: #475569 !important;
+}
+[data-theme="light"] .platform-theme-toggle:hover,
+[data-theme="light"] .platform-header button:last-child:hover { color: #c2410c !important; }
+[data-theme="light"] .platform-sidebar {
+  background: #fff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+[data-theme="light"] .platform-sidebar [class*="text-white"] { color: #172033 !important; }
+[data-theme="light"] .platform-sidebar [class*="text-slate-300"],
+[data-theme="light"] .platform-sidebar [class*="text-slate-400"],
+[data-theme="light"] .platform-sidebar [class*="text-slate-500"],
+[data-theme="light"] .platform-sidebar [class*="text-stone-500"] { color: #64748b !important; }
+[data-theme="light"] .platform-sidebar [class*="border-white/10"] { border-color: #e2e8f0 !important; }
+[data-theme="light"] .platform-sidebar [class*="bg-white/5"],
+[data-theme="light"] .platform-sidebar [class*="bg-white/10"] { background-color: #f8fafc !important; }
+[data-theme="light"] .platform-sidebar nav button:not([aria-current="page"]):hover { background-color: #f1f5f9 !important; color: #172033 !important; }
+[data-theme="light"] .platform-sidebar nav button[aria-current="page"] { color: #fff !important; }
+[data-theme="light"] .platform-dashboard main > div:first-child { border-color: #e2e8f0 !important; }
+[data-theme="light"] .platform-dashboard main > div:first-child h1 { color: #101828 !important; }
+[data-theme="light"] .platform-dashboard main > div:first-child p:not([class*="text-brand-orange"]) { color: #64748b !important; }
+[data-theme="light"] .platform-dashboard main > section,
+[data-theme="light"] .platform-dashboard main > [data-overview-insights] > section {
+  border-color: #e2e8f0 !important;
+  background-color: #fff !important;
+}
+[data-theme="light"] .platform-dashboard main [class*="text-brand-charcoal"],
+[data-theme="light"] .platform-dashboard main [class*="text-slate-950"],
+[data-theme="light"] .platform-dashboard main [class*="text-slate-900"] { color: #101828 !important; }
+[data-theme="light"] .platform-dashboard main [class*="text-stone-700"],
+[data-theme="light"] .platform-dashboard main [class*="text-stone-600"],
+[data-theme="light"] .platform-dashboard main [class*="text-stone-500"],
+[data-theme="light"] .platform-dashboard main [class*="text-stone-400"] { color: #64748b !important; }
+[data-theme="light"] .platform-dashboard main [class*="border-stone-"],
+[data-theme="light"] .platform-dashboard main [class*="divide-stone-"] { border-color: #e2e8f0 !important; }
+[data-theme="light"] .platform-dashboard main [class*="bg-stone-50"] { background-color: #f8fafc !important; }
+[data-theme="light"] .platform-dashboard main [class*="bg-slate-900"] { background-color: #172033 !important; }
+[data-theme="light"] .platform-dashboard main [class*="bg-slate-900"] [class*="text-slate-400"] { color: #cbd5e1 !important; }
 
 .smartmanager-theme input,
 .smartmanager-theme select,
@@ -116,6 +233,8 @@
   transition-property: color, background-color, border-color, opacity, transform, box-shadow;
   transition-duration: 160ms;
 }
+.smartmanager-theme button:not(:disabled),
+.smartmanager-theme a { cursor: pointer; }
 .smartmanager-theme button:not(:disabled):active,
 .smartmanager-theme a:active { transform: translateY(1px); }
 .smartmanager-theme ::-webkit-scrollbar { width: 9px; height: 9px; }
@@ -124,6 +243,42 @@
 .smartmanager-theme ::-webkit-scrollbar-thumb:hover { background: #f97316; }
 .smartmanager-theme a:focus-visible,
 .smartmanager-theme button:focus-visible { outline-color: rgb(255 107 53 / 55%); }
+
+/* Shared finishing touches used by every workspace module. */
+.smartmanager-theme main {
+  min-height: calc(100vh - 76px);
+}
+.smartmanager-theme main .page-heading h1 {
+  letter-spacing: -0.035em;
+}
+.smartmanager-theme main :is(input, select, textarea) {
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+.smartmanager-theme main :is(input, select, textarea):focus {
+  border-color: #fb923c;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(249 115 22 / 12%);
+}
+.smartmanager-theme main :is(table th) {
+  letter-spacing: 0.045em;
+}
+.smartmanager-theme main :is(article, section, aside).rounded-2xl.border {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 3%), 0 8px 24px -22px rgb(15 23 42 / 24%);
+}
+.smartmanager-theme.dark-mode main :is(article, section, aside).rounded-2xl.border {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 15%), 0 12px 28px -24px rgb(0 0 0 / 50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smartmanager-theme *,
+  .smartmanager-theme *::before,
+  .smartmanager-theme *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 .smartmanager-theme #sale-document {
   background: white !important;
@@ -162,11 +317,13 @@ body {
   #sale-document, #sale-document *,
   #rental-document, #rental-document *,
   #accounting-report-document, #accounting-report-document *,
-  #corporate-table-document, #corporate-table-document * { visibility: visible; }
+  #corporate-table-document, #corporate-table-document *,
+  #account-statement-print, #account-statement-print * { visibility: visible; }
   #sale-document,
   #rental-document,
   #accounting-report-document,
-  #corporate-table-document { position: absolute; inset: 0; width: 100%; }
+  #corporate-table-document,
+  #account-statement-print { position: absolute; inset: 0; width: 100%; }
   @page { size: A4; margin: 14mm; }
 }
 

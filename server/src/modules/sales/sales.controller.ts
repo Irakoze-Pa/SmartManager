@@ -16,6 +16,7 @@ const saleSchema = z.object({
   branchId: z.string().min(1),
   items: z.array(z.object({ productId: z.string().min(1), quantity: z.coerce.number().positive().max(100_000), saleUnit: z.enum(['base', 'package']).default('base') })).min(1).max(100),
   paymentMethod: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'credit', 'mobile_money']),
+  depositMethod: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'mobile_money']).optional(),
   amountPaid: z.coerce.number().min(0),
   customerId: z.string().refine(isValidObjectId, 'Customer is invalid').optional(),
 });
@@ -53,8 +54,8 @@ export const createSale: RequestHandler = async (request, response, next): Promi
       return { productId: product._id, name: product.name, sku: product.sku, quantity: input.quantity, stockQuantity, unitLabel: input.saleUnit === 'package' ? product.packageName : product.unit, unitPrice, unitCost: product.costPrice, lineTotal: roundMoney(input.quantity * unitPrice) };
     });
     const subtotal = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
-    if (parsed.data.paymentMethod !== 'credit' && parsed.data.amountPaid < subtotal) throw new ApiError(422, 'Amount paid is less than the sale total');
     if (parsed.data.paymentMethod === 'credit' && !customer) throw new ApiError(422, 'Select a customer for a credit sale');
+    if (parsed.data.amountPaid < subtotal && !customer) throw new ApiError(422, 'Select a customer to record the outstanding balance');
     if (parsed.data.amountPaid > subtotal && parsed.data.paymentMethod !== 'cash') throw new ApiError(422, 'Only cash payments can be greater than the sale total');
     const balanceDue = roundMoney(Math.max(0, subtotal - parsed.data.amountPaid));
     const changeDue = roundMoney(Math.max(0, parsed.data.amountPaid - subtotal));
@@ -71,10 +72,11 @@ export const createSale: RequestHandler = async (request, response, next): Promi
         updated.push({ productId: item.productId.toString(), quantity: item.stockQuantity, before: balance.quantity });
       }
       const receiptNumber = `S-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
-        const [sale] = await SaleModel.create([{ businessId: auth.businessId, branchId: branch._id, cashierId: auth.userId, ...(customer ? { customerId: customer._id, customerName: customer.name } : {}), receiptNumber, items, subtotal, total: subtotal, paymentMethod: parsed.data.paymentMethod, amountPaid: parsed.data.amountPaid, changeDue, balanceDue, paymentStatus }], session ? { session } : {});
+        const initialPaymentMethod = parsed.data.paymentMethod === 'credit' ? (parsed.data.amountPaid > 0 ? parsed.data.depositMethod ?? 'cash' : undefined) : parsed.data.paymentMethod;
+        const [sale] = await SaleModel.create([{ businessId: auth.businessId, branchId: branch._id, cashierId: auth.userId, ...(customer ? { customerId: customer._id, customerName: customer.name } : {}), receiptNumber, items, subtotal, total: subtotal, paymentMethod: parsed.data.paymentMethod, ...(initialPaymentMethod ? { initialPaymentMethod } : {}), amountPaid: parsed.data.amountPaid, changeDue, balanceDue, paymentStatus }], session ? { session } : {});
         if (!sale) throw new ApiError(500, 'Sale record was not created');
         await InventoryAdjustmentModel.insertMany(updated.map((item) => ({ businessId: auth.businessId, branchId: branch._id, productId: item.productId, userId: auth.userId, change: -item.quantity, quantityBefore: item.before, quantityAfter: item.before - item.quantity, reason: `Sale ${receiptNumber}` })), session ? { session } : {});
-        return { id: sale.id, receiptNumber, total: sale.total, subtotal: sale.subtotal, amountPaid: sale.amountPaid, changeDue: sale.changeDue, balanceDue: sale.balanceDue, paymentStatus: sale.paymentStatus, paymentMethod: sale.paymentMethod, createdAt: sale.createdAt, customerName: sale.customerName ?? '', cashierName: `${user.firstName} ${user.lastName}`, branchName: branch.name, items: sale.items, business: { name: business.name, logoUrl: business.logoUrl ?? '', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '' } };
+        return { id: sale.id, receiptNumber, total: sale.total, subtotal: sale.subtotal, amountPaid: sale.amountPaid, changeDue: sale.changeDue, balanceDue: sale.balanceDue, paymentStatus: sale.paymentStatus, paymentMethod: sale.paymentMethod, initialPaymentMethod: sale.initialPaymentMethod, creditPayments: sale.creditPayments, createdAt: sale.createdAt, customerName: sale.customerName ?? '', cashierName: `${user.firstName} ${user.lastName}`, branchName: branch.name, items: sale.items, business: { name: business.name, logoUrl: business.logoUrl ?? '', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '' } };
       } catch (error: unknown) {
         // Preserve a compensating rollback if this helper is ever used without
         // the transaction session supplied by the Atlas checkout flow.
@@ -108,7 +110,7 @@ export const listSales: RequestHandler = async (request, response, next): Promis
     const auth = requireAuth(request);
     const branchId = typeof request.query.branchId === 'string' ? request.query.branchId : undefined;
     const sales = await SaleModel.find({ businessId: auth.businessId, ...(branchId ? { branchId } : {}) }).sort({ createdAt: -1 }).limit(50).lean();
-    response.json({ items: sales.map((sale) => ({ id: sale._id.toString(), receiptNumber: sale.receiptNumber, branchId: sale.branchId.toString(), total: sale.total, amountPaid: sale.amountPaid, balanceDue: sale.balanceDue ?? 0, paymentStatus: sale.paymentStatus ?? 'paid', paymentMethod: sale.paymentMethod, itemCount: sale.items.reduce((sum, item) => sum + item.quantity, 0), status: sale.status, createdAt: sale.createdAt })) });
+    response.json({ items: sales.map((sale) => ({ id: sale._id.toString(), receiptNumber: sale.receiptNumber, branchId: sale.branchId.toString(), total: sale.total, amountPaid: sale.amountPaid, balanceDue: sale.balanceDue ?? 0, paymentStatus: sale.paymentStatus ?? 'paid', paymentMethod: sale.paymentMethod, initialPaymentMethod: sale.initialPaymentMethod, itemCount: sale.items.reduce((sum, item) => sum + item.quantity, 0), status: sale.status, createdAt: sale.createdAt })) });
   } catch (error: unknown) { next(error); }
 };
 
@@ -124,6 +126,6 @@ export const getSale: RequestHandler = async (request, response, next): Promise<
       UserModel.findById(sale.cashierId).select('firstName lastName').lean(),
     ]);
     if (!business) throw new ApiError(404, 'Business profile was not found');
-    response.json({ sale: { id: sale._id.toString(), receiptNumber: sale.receiptNumber, subtotal: sale.subtotal, total: sale.total, amountPaid: sale.amountPaid, changeDue: sale.changeDue, balanceDue: sale.balanceDue ?? 0, paymentStatus: sale.paymentStatus ?? 'paid', paymentMethod: sale.paymentMethod, status: sale.status, createdAt: sale.createdAt, customerName: sale.customerName ?? '', cashierName: cashier ? `${cashier.firstName} ${cashier.lastName}` : '', branchName: branch?.name ?? '', items: sale.items, business: { name: business.name, logoUrl: business.logoUrl ?? '', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '' } } });
+    response.json({ sale: { id: sale._id.toString(), receiptNumber: sale.receiptNumber, subtotal: sale.subtotal, total: sale.total, amountPaid: sale.amountPaid, changeDue: sale.changeDue, balanceDue: sale.balanceDue ?? 0, paymentStatus: sale.paymentStatus ?? 'paid', paymentMethod: sale.paymentMethod, initialPaymentMethod: sale.initialPaymentMethod ?? (sale.paymentMethod === 'credit' ? undefined : sale.paymentMethod), creditPayments: sale.creditPayments ?? [], status: sale.status, createdAt: sale.createdAt, customerName: sale.customerName ?? '', cashierName: cashier ? `${cashier.firstName} ${cashier.lastName}` : '', branchName: branch?.name ?? '', items: sale.items, business: { name: business.name, logoUrl: business.logoUrl ?? '', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '' } } });
   } catch (error: unknown) { next(error); }
 };

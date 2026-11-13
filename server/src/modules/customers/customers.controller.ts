@@ -57,3 +57,18 @@ export const recordCreditPayment: RequestHandler = async (request, response, nex
   }
   response.status(201).json({ payment: { amount: parsed.data.amount, method: parsed.data.method, balanceDue: Math.round((outstanding - parsed.data.amount) * 100) / 100 } });
 } catch (error) { next(error); } };
+
+export const getCustomerStatement: RequestHandler = async (request, response, next) => { try {
+  const tenant = auth(request);
+  if (!isValidObjectId(request.params.customerId)) throw new ApiError(422, 'Customer is invalid');
+  const customer = await CustomerModel.findOne({ _id: request.params.customerId, businessId: tenant.businessId }).lean();
+  if (!customer) throw new ApiError(404, 'Customer was not found');
+  const sales = await SaleModel.find({ businessId: tenant.businessId, customerId: customer._id, status: 'completed' }).sort({ createdAt: -1 }).lean();
+  const transactions = sales.map((sale) => {
+    const creditPayments = (sale.creditPayments ?? []).map((payment) => ({ amount: payment.amount, method: payment.method, date: payment.receivedAt }));
+    const initialAmount = Math.max(0, sale.amountPaid - creditPayments.reduce((sum, payment) => sum + payment.amount, 0));
+    const payments = [...(initialAmount > 0 ? [{ amount: initialAmount, method: sale.initialPaymentMethod ?? (sale.paymentMethod === 'credit' ? 'cash' : sale.paymentMethod), date: sale.createdAt }] : []), ...creditPayments];
+    return { id: sale._id.toString(), date: sale.createdAt, reference: sale.receiptNumber, type: 'sale' as const, method: sale.paymentMethod, total: sale.total, paid: sale.amountPaid, balance: sale.balanceDue ?? 0, payments };
+  });
+  response.json({ statement: { customer: { id: customer._id.toString(), name: customer.name, phone: customer.phone, email: customer.email }, totalSales: sales.reduce((sum, sale) => sum + sale.total, 0), totalPaid: sales.reduce((sum, sale) => sum + sale.amountPaid, 0), balanceDue: sales.reduce((sum, sale) => sum + (sale.balanceDue ?? 0), 0), transactions } });
+} catch (error) { next(error); } };

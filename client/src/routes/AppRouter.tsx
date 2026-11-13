@@ -25,12 +25,13 @@ import { HelpCenterPage } from '../pages/HelpCenterPage';
 import { RestaurantPage } from '../pages/RestaurantPage';
 import { RentalsPage } from '../pages/RentalsPage';
 import { AccountingPage } from '../pages/AccountingPage';
+import { StatementsPage } from '../pages/StatementsPage';
 
 export function AppRouter() {
   return (
     <BrowserRouter><AuthProvider><PlatformAuthProvider><Routes>
       <Route element={<AuthLayout />}><Route path="login" element={<LoginPage />} /></Route>
-      <Route element={<ProtectedRoute />}><Route element={<DashboardLayout />}><Route index element={<DashboardPage />} /><Route path="restaurant" element={<RestaurantPage />} /><Route path="rentals" element={<RentalsPage />} /><Route path="pos" element={<PointOfSalePage />} /><Route path="products" element={<ProductsPage />} /><Route path="inventory" element={<InventoryPage />} /><Route path="purchasing" element={<PurchasingPage />} /><Route path="customers" element={<CustomersPage />} /><Route path="finance" element={<FinancePage />} /><Route path="accounting" element={<AccountingPage />} /><Route path="reports" element={<ReportsPage />} /><Route path="settings" element={<SettingsPage />} /><Route path="help" element={<HelpCenterPage />} /><Route element={<TenantAdminRoute />}><Route path="branches" element={<BranchesPage />} /><Route path="team" element={<TeamPage />} /><Route path="subscription" element={<Navigate to="/settings" replace />} /></Route></Route></Route>
+      <Route element={<ProtectedRoute />}><Route element={<DashboardLayout />}><Route index element={<DashboardPage />} /><Route path="restaurant" element={<RestaurantPage />} /><Route path="rentals" element={<RentalsPage />} /><Route path="pos" element={<PointOfSalePage />} /><Route path="products" element={<ProductsPage />} /><Route path="inventory" element={<InventoryPage />} /><Route path="purchasing" element={<PurchasingPage />} /><Route path="customers" element={<CustomersPage />} /><Route path="statements" element={<StatementsPage />} /><Route path="finance" element={<FinancePage />} /><Route path="accounting" element={<AccountingPage />} /><Route path="reports" element={<ReportsPage />} /><Route path="settings" element={<SettingsPage />} /><Route path="help" element={<HelpCenterPage />} /><Route element={<TenantAdminRoute />}><Route path="branches" element={<BranchesPage />} /><Route path="team" element={<TeamPage />} /><Route path="subscription" element={<Navigate to="/settings" replace />} /></Route></Route></Route>
       <Route path="platform/login" element={<PlatformLoginPage />} />
       <Route element={<PlatformProtectedRoute />}><Route path="platform" element={<PlatformDashboardPage />} /></Route>
       <Route path="*" element={<NotFoundPage />} />

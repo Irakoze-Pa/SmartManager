@@ -24,6 +24,7 @@ const purchaseInput = z.object({
     productId: z.string().refine(isValidObjectId, 'Product is invalid'),
     quantity: z.coerce.number().positive().max(1_000_000),
     unitCost: z.coerce.number().min(0).max(1_000_000_000),
+    unitType: z.enum(['base', 'package']).default('base'),
   })).min(1).max(100),
 });
 const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
@@ -39,6 +40,19 @@ export const listSuppliers: RequestHandler = async (request, response, next) => 
   const tenant = auth(request);
   const suppliers = await SupplierModel.find({ businessId: tenant.businessId }).sort({ name: 1 }).lean();
   response.json({ items: suppliers.map((item) => ({ id: item._id.toString(), name: item.name, contactName: item.contactName, phone: item.phone, email: item.email, isActive: item.isActive })) });
+} catch (error) { next(error); } };
+
+export const getSupplierStatement: RequestHandler = async (request, response, next) => { try {
+  const tenant = auth(request);
+  if (!isValidObjectId(request.params.supplierId)) throw new ApiError(422, 'Supplier is invalid');
+  const supplier = await SupplierModel.findOne({ _id: request.params.supplierId, businessId: tenant.businessId }).lean();
+  if (!supplier) throw new ApiError(404, 'Supplier was not found');
+  const orders = await PurchaseOrderModel.find({ businessId: tenant.businessId, supplierId: supplier._id }).sort({ createdAt: -1 }).lean();
+  const transactions = orders.map((order) => {
+    const paid = (order.supplierPayments ?? []).reduce((sum, payment) => sum + payment.amount, 0);
+    return { id: order._id.toString(), date: order.createdAt, reference: order.orderNumber, status: order.status, total: order.total, paid, balance: order.status === 'received' ? Math.max(0, roundMoney(order.total - paid)) : 0, payments: (order.supplierPayments ?? []).map((payment) => ({ amount: payment.amount, method: payment.method, reference: payment.reference, date: payment.paidAt })) };
+  });
+  response.json({ statement: { supplier: { id: supplier._id.toString(), name: supplier.name, phone: supplier.phone, email: supplier.email }, totalOrders: orders.filter((order) => order.status === 'received').reduce((sum, order) => sum + order.total, 0), totalPaid: orders.reduce((sum, order) => sum + (order.supplierPayments ?? []).reduce((paid, payment) => paid + payment.amount, 0), 0), balanceDue: transactions.reduce((sum, transaction) => sum + transaction.balance, 0), transactions } });
 } catch (error) { next(error); } };
 
 export const createSupplier: RequestHandler = async (request, response, next) => { try {
@@ -60,17 +74,17 @@ export const listPurchaseOrders: RequestHandler = async (request, response, next
   const tenant = auth(request);
   const branchIds = await accessibleBranches(tenant);
   const orders = await PurchaseOrderModel.find({ businessId: tenant.businessId, ...(branchIds ? { branchId: { $in: branchIds } } : {}) }).sort({ createdAt: -1 }).limit(100).populate('supplierId', 'name').populate('branchId', 'name').lean();
-  response.json({ items: orders.map((order) => ({ id: order._id.toString(), orderNumber: order.orderNumber, supplierId: String((order.supplierId as unknown as { _id: unknown })._id), supplierName: (order.supplierId as unknown as { name: string }).name, branchId: String((order.branchId as unknown as { _id: unknown })._id), branchName: (order.branchId as unknown as { name: string }).name, items: order.items.map((item) => ({ productId: item.productId.toString(), name: item.name, sku: item.sku, quantity: item.quantity, unitCost: item.unitCost, lineTotal: item.lineTotal })), total: order.total, status: order.status, createdAt: order.createdAt, receivedAt: order.receivedAt })) });
+  response.json({ items: orders.map((order) => ({ id: order._id.toString(), orderNumber: order.orderNumber, supplierId: String((order.supplierId as unknown as { _id: unknown })._id), supplierName: (order.supplierId as unknown as { name: string }).name, branchId: String((order.branchId as unknown as { _id: unknown })._id), branchName: (order.branchId as unknown as { name: string }).name, items: order.items.map((item) => ({ productId: item.productId.toString(), name: item.name, sku: item.sku, quantity: item.quantity, unitLabel: item.unitLabel ?? 'unit', packageSize: item.packageSize ?? 1, unitCost: item.unitCost, lineTotal: item.lineTotal })), total: order.total, supplierPayments: (order.supplierPayments ?? []).map((payment) => ({ id: payment.id, amount: payment.amount, method: payment.method, reference: payment.reference, paidAt: payment.paidAt })), status: order.status, createdAt: order.createdAt, receivedAt: order.receivedAt })) });
 } catch (error) { next(error); } };
 
 export const createPurchaseOrder: RequestHandler = async (request, response, next) => { try {
   const tenant = auth(request); const parsed = purchaseInput.safeParse(request.body);
   if (!parsed.success) throw new ApiError(422, 'Purchase order details are invalid', parsed.error.flatten().fieldErrors);
-  const quantities = new Map<string, { quantity: number; unitCost: number }>();
+  const quantities = new Map<string, { quantity: number; unitCost: number; unitType: 'base' | 'package' }>();
   for (const item of parsed.data.items) {
     const previous = quantities.get(item.productId);
-    if (previous && previous.unitCost !== item.unitCost) throw new ApiError(422, 'Duplicate products must use the same unit cost');
-    quantities.set(item.productId, { quantity: (previous?.quantity ?? 0) + item.quantity, unitCost: item.unitCost });
+    if (previous && (previous.unitCost !== item.unitCost || previous.unitType !== item.unitType)) throw new ApiError(422, 'Duplicate products must use the same unit and unit cost');
+    quantities.set(item.productId, { quantity: (previous?.quantity ?? 0) + item.quantity, unitCost: item.unitCost, unitType: item.unitType });
   }
   const branchIds = await accessibleBranches(tenant);
   const [branch, supplier, products] = await Promise.all([
@@ -79,11 +93,26 @@ export const createPurchaseOrder: RequestHandler = async (request, response, nex
     ProductModel.find({ _id: { $in: [...quantities.keys()] }, businessId: tenant.businessId, isActive: true }).lean(),
   ]);
   if (!branch || !supplier || products.length !== quantities.size) throw new ApiError(422, 'Select an active branch, supplier, and products in this business');
-  const items = products.map((product) => { const input = quantities.get(product._id.toString()); if (!input) throw new ApiError(422, 'Product is unavailable'); return { productId: product._id, name: product.name, sku: product.sku, quantity: input.quantity, unitCost: input.unitCost, lineTotal: roundMoney(input.quantity * input.unitCost) }; });
+  const items = products.map((product) => { const input = quantities.get(product._id.toString()); if (!input) throw new ApiError(422, 'Product is unavailable'); const packageSize = input.unitType === 'package' ? product.packageSize : undefined; if (input.unitType === 'package' && (!packageSize || !product.packageName)) throw new ApiError(422, `${product.name} has no package unit configured`); return { productId: product._id, name: product.name, sku: product.sku, quantity: input.quantity, unitLabel: input.unitType === 'package' ? product.packageName! : product.unit, packageSize: packageSize ?? 1, unitCost: input.unitCost, lineTotal: roundMoney(input.quantity * input.unitCost) }; });
   const total = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
   const orderNumber = `PO-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
   const order = await PurchaseOrderModel.create({ businessId: tenant.businessId, branchId: parsed.data.branchId, supplierId: parsed.data.supplierId, createdBy: tenant.userId, orderNumber, items, total });
   response.status(201).json({ purchaseOrder: { id: order.id, orderNumber, total, status: order.status, createdAt: order.createdAt } });
+} catch (error) { next(error); } };
+
+export const recordSupplierPayment: RequestHandler = async (request, response, next) => { try {
+  const tenant = auth(request);
+  const parsed = z.object({ amount: z.coerce.number().positive().max(1_000_000_000), method: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer']), reference: z.string().trim().max(100).default('') }).safeParse(request.body);
+  if (!parsed.success || !isValidObjectId(request.params.purchaseOrderId)) throw new ApiError(422, 'Supplier payment details are invalid');
+  const order = await PurchaseOrderModel.findOne({ _id: request.params.purchaseOrderId, businessId: tenant.businessId, status: 'received' });
+  if (!order) throw new ApiError(404, 'Received purchase order was not found');
+  const paid = order.supplierPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const outstanding = roundMoney(order.total - paid);
+  if (parsed.data.amount > outstanding) throw new ApiError(422, `Payment exceeds the outstanding balance of ${outstanding}`);
+  order.supplierPayments.push({ ...parsed.data, recordedBy: tenant.userId, paidAt: new Date() });
+  await order.save();
+  const totalPaid = roundMoney(paid + parsed.data.amount);
+  response.status(201).json({ payment: { amount: parsed.data.amount, method: parsed.data.method, reference: parsed.data.reference, paidAt: new Date().toISOString() }, paid: totalPaid, balanceDue: roundMoney(order.total - totalPaid) });
 } catch (error) { next(error); } };
 
 export const receivePurchaseOrder: RequestHandler = async (request, response, next) => { try {
@@ -99,9 +128,14 @@ export const receivePurchaseOrder: RequestHandler = async (request, response, ne
       const adjustments = [];
       for (const item of order.items) {
         const balance = await InventoryBalanceModel.findOneAndUpdate({ businessId: tenant.businessId, branchId: order.branchId, productId: item.productId }, { $inc: { quantity: item.quantity }, $setOnInsert: { businessId: tenant.businessId, branchId: order.branchId, productId: item.productId } }, { upsert: true, new: true, ...(session ? { session } : {}) });
-        applied.push({ branchId: order.branchId, productId: item.productId, quantity: item.quantity });
-        const before = balance.quantity - item.quantity;
-        adjustments.push({ businessId: tenant.businessId, branchId: order.branchId, productId: item.productId, userId: tenant.userId, change: item.quantity, quantityBefore: before, quantityAfter: balance.quantity, reason: `Purchase order ${order.orderNumber}` });
+        const stockQuantity = item.quantity * (item.packageSize ?? 1);
+        if (stockQuantity !== item.quantity) {
+          await InventoryBalanceModel.updateOne({ businessId: tenant.businessId, branchId: order.branchId, productId: item.productId }, { $inc: { quantity: stockQuantity - item.quantity } }, session ? { session } : {});
+          balance.quantity += stockQuantity - item.quantity;
+        }
+        applied.push({ branchId: order.branchId, productId: item.productId, quantity: stockQuantity });
+        const before = balance.quantity - stockQuantity;
+        adjustments.push({ businessId: tenant.businessId, branchId: order.branchId, productId: item.productId, userId: tenant.userId, change: stockQuantity, quantityBefore: before, quantityAfter: balance.quantity, reason: `Purchase order ${order.orderNumber}` });
       }
       await InventoryAdjustmentModel.insertMany(adjustments, session ? { session } : {});
       return { id: order.id, status: order.status, receivedAt: order.receivedAt };

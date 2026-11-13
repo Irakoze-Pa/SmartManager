@@ -7,5 +7,5 @@ export const getSales = async (branchId?: string): Promise<SaleSummary[]> =>
 export const getSale = async (id: string): Promise<CompletedSale> =>
   (await apiClient.get<{ sale: CompletedSale }>(`/sales/${id}`)).data.sale;
 
-export const createSale = async (input: { branchId: string; items: Array<{ productId: string; quantity: number; saleUnit: 'base' | 'package' }>; paymentMethod: PaymentMethod; amountPaid: number; customerId?: string }): Promise<CompletedSale> =>
+export const createSale = async (input: { branchId: string; items: Array<{ productId: string; quantity: number; saleUnit: 'base' | 'package' }>; paymentMethod: PaymentMethod; amountPaid: number; depositMethod?: Exclude<PaymentMethod, 'credit'>; customerId?: string }): Promise<CompletedSale> =>
   (await apiClient.post<{ sale: CompletedSale }>('/sales', input)).data.sale;

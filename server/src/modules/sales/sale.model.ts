@@ -30,6 +30,7 @@ const saleSchema = new Schema({
   subtotal: { type: Number, required: true, min: 0 },
   total: { type: Number, required: true, min: 0 },
   paymentMethod: { type: String, enum: ['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'credit', 'mobile_money'], required: true },
+  initialPaymentMethod: { type: String, enum: ['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'mobile_money'] },
   amountPaid: { type: Number, required: true, min: 0 },
   changeDue: { type: Number, required: true, min: 0 },
   balanceDue: { type: Number, required: true, min: 0, default: 0 },
