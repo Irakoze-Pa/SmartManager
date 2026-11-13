@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: smartshop-pro-client
+    runtime: static
+    plan: free
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: client/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+  - type: web
+    name: smartshop-pro-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: PLATFORM_JWT_SECRET
+        generateValue: true
+      - key: PLATFORM_JWT_EXPIRES_IN
+        value: 2h
