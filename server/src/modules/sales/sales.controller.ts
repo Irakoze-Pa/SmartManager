@@ -14,7 +14,7 @@ import { SaleModel } from './sale.model.js';
 
 const saleSchema = z.object({
   branchId: z.string().min(1),
-  items: z.array(z.object({ productId: z.string().min(1), quantity: z.coerce.number().positive().max(100_000), saleUnit: z.enum(['base', 'package']).default('base') })).min(1).max(100),
+  items: z.array(z.object({ productId: z.string().min(1), quantity: z.coerce.number().positive().max(100_000), saleUnit: z.enum(['base', 'package']).default('base'), unitPrice: z.coerce.number().finite().min(0).max(1_000_000_000).optional() })).min(1).max(100),
   paymentMethod: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'credit', 'mobile_money']),
   depositMethod: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer', 'mobile_money']).optional(),
   amountPaid: z.coerce.number().min(0),
@@ -28,8 +28,8 @@ export const createSale: RequestHandler = async (request, response, next): Promi
     const auth = requireAuth(request);
     const parsed = saleSchema.safeParse(request.body);
     if (!parsed.success) throw new ApiError(422, 'Sale details are invalid', parsed.error.flatten().fieldErrors);
-    const quantities = new Map<string, { productId: string; quantity: number; saleUnit: 'base' | 'package' }>();
-    for (const item of parsed.data.items) { const key = `${item.productId}:${item.saleUnit}`; const previous = quantities.get(key); quantities.set(key, { productId: item.productId, quantity: (previous?.quantity ?? 0) + item.quantity, saleUnit: item.saleUnit }); }
+    const quantities = new Map<string, { productId: string; quantity: number; saleUnit: 'base' | 'package'; unitPrice?: number }>();
+    for (const item of parsed.data.items) { const key = `${item.productId}:${item.saleUnit}`; const previous = quantities.get(key); if (previous && item.unitPrice !== undefined && previous.unitPrice !== undefined && item.unitPrice !== previous.unitPrice) throw new ApiError(422, 'Duplicate product lines must use the same selling price'); quantities.set(key, { productId: item.productId, quantity: (previous?.quantity ?? 0) + item.quantity, saleUnit: item.saleUnit, ...(item.unitPrice !== undefined ? { unitPrice: item.unitPrice } : previous?.unitPrice !== undefined ? { unitPrice: previous.unitPrice } : {}) }); }
     const itemInputs = [...quantities.values()];
     const productIds = [...new Set(itemInputs.map((item) => item.productId))];
     const [branch, user, products, customer, business] = await Promise.all([
@@ -50,7 +50,7 @@ export const createSale: RequestHandler = async (request, response, next): Promi
       if (!product) throw new ApiError(422, 'Product is unavailable');
       if (input.saleUnit === 'package' && (!product.packageName || !product.packageSize || product.packageSellingPrice === undefined)) throw new ApiError(422, `${product.name} does not have package selling configured`);
       const stockQuantity = input.saleUnit === 'package' ? input.quantity * product.packageSize! : input.quantity;
-      const unitPrice = input.saleUnit === 'package' ? product.packageSellingPrice! : product.sellingPrice;
+      const unitPrice = input.unitPrice ?? (input.saleUnit === 'package' ? product.packageSellingPrice! : product.sellingPrice);
       return { productId: product._id, name: product.name, sku: product.sku, quantity: input.quantity, stockQuantity, unitLabel: input.saleUnit === 'package' ? product.packageName : product.unit, unitPrice, unitCost: product.costPrice, lineTotal: roundMoney(input.quantity * unitPrice) };
     });
     const subtotal = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
