@@ -1,3 +1,4 @@
+import { useLanguage } from '../features/language/LanguageContext';
 import { useState, type FormEvent } from 'react';
 import { Building2, Factory, GraduationCap, Hammer, ImagePlus, Layers3, ShoppingCart, Truck, Utensils, X } from 'lucide-react';
 
@@ -21,4 +22,4 @@ export function PlatformCompanyForm({ busy, onClose, onSubmit }: { busy: boolean
   </form>;
 }
 
-function Field({ name, label, type = 'text', required = false, minLength, placeholder }: { name: string; label: string; type?: string; required?: boolean; minLength?: number; placeholder?: string }) { return <label className="text-sm font-semibold text-slate-700">{label}<input name={name} type={type} required={required} minLength={minLength} placeholder={placeholder} className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 font-normal text-slate-950 outline-none placeholder:text-slate-400 focus:border-brand-orange-500 focus:ring-4 focus:ring-orange-500/10" /></label>; }
+function Field({ name, label, type = 'text', required = false, minLength, placeholder }: { name: string; label: string; type?: string; required?: boolean; minLength?: number; placeholder?: string }) { const { t } = useLanguage(); return <label className="text-sm font-semibold text-slate-700">{label}<input name={name} type={type} required={required} minLength={minLength} placeholder={placeholder ? t(placeholder) : undefined} className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 font-normal text-slate-950 outline-none placeholder:text-slate-400 focus:border-brand-orange-500 focus:ring-4 focus:ring-orange-500/10" /></label>; }

@@ -27,6 +27,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { CompanyLogo } from '../components/CompanyLogo';
 import { useAuth } from '../features/auth/AuthContext';
+import { useLanguage } from '../features/language/LanguageContext';
 
 interface NavigationItem {
   label: string;
@@ -53,18 +54,28 @@ const navigation: NavigationItem[] = [
   { label: 'Team access', path: '/team', icon: Users, available: true, group: 'Administration' },
 ];
 
+const kinyarwandaNavigation: Record<string, string> = {
+  Overview: 'Incamake', Restaurant: 'Resitora', Rentals: 'Ubukode', 'Point of sale': 'Ahishyurirwa',
+  Products: 'Ibicuruzwa', Inventory: 'Ububiko', Purchasing: 'Amasoko', Customers: 'Abakiriya',
+  'Finance & accounting': 'Imari n’ibaruramari', Statements: 'Inyandiko z’imari', 'Accounting center': 'Ibaruramari',
+  Reports: 'Raporo', Branches: 'Amashami', 'Team access': 'Abakozi', 'Help center': 'Ubufasha', Settings: 'Igenamiterere',
+  Workspace: 'Ahakorerwa', Operations: 'Imirimo', Insights: 'Isesengura', Administration: 'Imiyoborere',
+};
+
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('smartmanager-theme') === 'dark');
   const location = useLocation();
   const { identity, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
+  const translate = (text: string) => language === 'rw' ? kinyarwandaNavigation[text] ?? t(text) : text;
   const initials = `${identity?.user.firstName.at(0) ?? ''}${identity?.user.lastName.at(0) ?? ''}`;
   const canAdminister = identity?.user.role === 'owner' || identity?.user.role === 'admin';
   const industry = identity?.business.industry ?? 'retail';
   const sectorOperations = industry === 'retail' ? ['/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : ['/customers'];
   const visibleNavigation = navigation.filter((item) => (item.group !== 'Operations' || sectorOperations.includes(item.path)) && (!['/branches', '/team'].includes(item.path) || canAdminister) && (item.path !== '/purchasing' || identity?.user.role !== 'cashier') && (!['/finance', '/accounting', '/reports', '/statements'].includes(item.path) || ['owner', 'admin', 'manager'].includes(identity?.user.role ?? '')));
   const mobileNavigation = visibleNavigation.filter((item) => !['/branches', '/team'].includes(item.path)).slice(0, 3);
-  const currentTitle = location.pathname === '/settings' ? 'Settings' : location.pathname === '/help' ? 'Help center' : navigation.find((item) => item.path === location.pathname)?.label ?? 'SmartManager';
+  const currentTitle = translate(location.pathname === '/settings' ? 'Settings' : location.pathname === '/help' ? 'Help center' : navigation.find((item) => item.path === location.pathname)?.label ?? 'SmartManager');
 
   const toggleTheme = () => setDarkMode((current) => {
     const next = !current;
@@ -107,13 +118,13 @@ export function DashboardLayout() {
         </div>
 
         <nav className="mt-6 flex-1 overflow-y-auto px-4" aria-label="Primary navigation">
-          {(['Workspace', 'Operations', 'Insights', 'Administration'] as const).map((group) => { const items = visibleNavigation.filter((item) => item.group === group); return items.length > 0 && <div key={group} className="mb-5"><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">{group}</p><div className="space-y-1">{items.map(({ label, path, icon: Icon }) => <NavLink key={path} to={path} onClick={() => setSidebarOpen(false)} className={({ isActive }) => `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-brand-orange-500 text-white shadow-lg shadow-orange-950/20 before:absolute before:-left-4 before:h-6 before:w-1 before:rounded-r-full before:bg-brand-orange-400' : 'text-slate-400 hover:bg-white/8 hover:text-white'}`}><Icon size={18} aria-hidden="true" /><span className="flex-1">{label}</span></NavLink>)}</div></div>; })}
+          {(['Workspace', 'Operations', 'Insights', 'Administration'] as const).map((group) => { const items = visibleNavigation.filter((item) => item.group === group); return items.length > 0 && <div key={group} className="mb-5"><p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">{translate(group)}</p><div className="space-y-1">{items.map(({ label, path, icon: Icon }) => <NavLink key={path} to={path} onClick={() => setSidebarOpen(false)} className={({ isActive }) => `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-brand-orange-500 text-white shadow-lg shadow-orange-950/20 before:absolute before:-left-4 before:h-6 before:w-1 before:rounded-r-full before:bg-brand-orange-400' : 'text-slate-400 hover:bg-white/8 hover:text-white'}`}><Icon size={18} aria-hidden="true" /><span className="flex-1">{translate(label)}</span></NavLink>)}</div></div>; })}
         </nav>
 
         <div className="border-t border-white/8 p-4">
           <div className="space-y-1">
-            <NavLink to="/help" onClick={() => setSidebarOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/8 hover:text-white'}`}><HelpCircle size={18} />Help center</NavLink>
-            <NavLink to="/settings" onClick={() => setSidebarOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/8 hover:text-white'}`}><Settings size={18} />Settings</NavLink>
+            <NavLink to="/help" onClick={() => setSidebarOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/8 hover:text-white'}`}><HelpCircle size={18} />{translate('Help center')}</NavLink>
+            <NavLink to="/settings" onClick={() => setSidebarOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/8 hover:text-white'}`}><Settings size={18} />{translate('Settings')}</NavLink>
           </div>
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.06] p-3">
             <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-brand-orange-400 to-brand-orange-600 text-xs font-bold text-white">{initials}</span>
@@ -136,6 +147,10 @@ export function DashboardLayout() {
             <div className="flex items-center gap-2"><span className="size-1.5 rounded-full bg-brand-orange-500 shadow-[0_0_0_4px_rgba(249,115,22,0.1)]" /><p className="truncate text-sm font-bold text-slate-950">{currentTitle}</p></div>
             <p className="mt-1 hidden text-xs text-slate-500 sm:block">{identity?.branch.name} <span className="px-1 text-slate-300">/</span> {identity?.business.name}</p>
           </div>
+          <div role="group" aria-label="Language / Ururimi" className="mr-2 flex shrink-0 rounded-xl border border-slate-200 bg-white p-0.5 text-[11px] font-bold shadow-sm">
+            <button type="button" onClick={() => setLanguage('en')} aria-pressed={language === 'en'} className={`rounded-lg px-2.5 py-1.5 transition ${language === 'en' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>EN</button>
+            <button type="button" onClick={() => setLanguage('rw')} aria-pressed={language === 'rw'} className={`rounded-lg px-2.5 py-1.5 transition ${language === 'rw' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>RW</button>
+          </div>
           <div className="mr-3 hidden text-right md:block"><p className="text-xs font-semibold text-slate-700">{new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p><p className="mt-0.5 text-[10px] capitalize text-slate-400">{industry.replace('_', ' ')} workspace</p></div>
           <button
             className="mr-2 rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-brand-orange-600"
@@ -152,7 +167,7 @@ export function DashboardLayout() {
         </header>
         <main className="mx-auto w-full max-w-[1700px] p-4 pb-24 sm:p-6 sm:pb-8 xl:p-8"><Outlet /></main>
       </div>
-      <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-[0_16px_40px_-20px_rgba(15,23,42,0.45)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">{mobileNavigation.map(({ label, path, icon: Icon }) => <NavLink key={path} to={path} className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold transition ${isActive ? 'bg-brand-orange-500 text-white shadow-md shadow-orange-900/20' : 'text-slate-500'}`}><Icon size={18} /><span className="truncate">{label}</span></NavLink>)}<NavLink to="/settings" className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold transition ${isActive ? 'bg-brand-orange-500 text-white shadow-md shadow-orange-900/20' : 'text-slate-500'}`}><Settings size={18} /><span>Settings</span></NavLink></nav>
+      <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-[0_16px_40px_-20px_rgba(15,23,42,0.45)] backdrop-blur-xl lg:hidden" aria-label={language === 'rw' ? 'Ibikubiyemo' : 'Mobile navigation'}>{mobileNavigation.map(({ label, path, icon: Icon }) => <NavLink key={path} to={path} className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold transition ${isActive ? 'bg-brand-orange-500 text-white shadow-md shadow-orange-900/20' : 'text-slate-500'}`}><Icon size={18} /><span className="truncate">{translate(label)}</span></NavLink>)}<NavLink to="/settings" className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold transition ${isActive ? 'bg-brand-orange-500 text-white shadow-md shadow-orange-900/20' : 'text-slate-500'}`}><Settings size={18} /><span>{translate('Settings')}</span></NavLink></nav>
     </div>
   );
 }
