@@ -14,4 +14,9 @@ export const createStaffSchema = z.object({
   branchId: z.string().min(1),
 });
 export const staffStatusSchema = z.object({ isActive: z.boolean() });
+export const updateStaffSchema = z.object({
+  role: z.enum(userRoles).exclude(['owner']),
+  branchId: z.string().min(1),
+  isActive: z.boolean(),
+});
 

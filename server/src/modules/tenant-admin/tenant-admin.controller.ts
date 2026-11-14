@@ -3,7 +3,7 @@ import type { RequestHandler } from 'express';
 import { BranchModel } from '../branches/branch.model.js';
 import { UserModel } from '../users/user.model.js';
 import { ApiError } from '../../utils/ApiError.js';
-import { branchStatusSchema, createBranchSchema, createStaffSchema, staffStatusSchema } from './tenant-admin.validation.js';
+import { branchStatusSchema, createBranchSchema, createStaffSchema, staffStatusSchema, updateStaffSchema } from './tenant-admin.validation.js';
 
 const requireAuth = (auth: Express.Request['auth']) => {
   if (!auth) throw new ApiError(401, 'Authentication is required');
@@ -79,6 +79,27 @@ export const updateTenantStaffStatus: RequestHandler = async (request, response,
     if (user.role === 'owner') throw new ApiError(403, 'The owner account cannot be changed here');
     user.isActive = parsed.data.isActive; await user.save();
     response.json({ user: { id: user.id, isActive: user.isActive } });
+  } catch (error: unknown) { next(error); }
+};
+
+export const updateTenantStaff: RequestHandler = async (request, response, next): Promise<void> => {
+  try {
+    const auth = requireAuth(request.auth);
+    const parsed = updateStaffSchema.safeParse(request.body);
+    if (!parsed.success) throw new ApiError(422, 'Staff details are invalid', parsed.error.flatten().fieldErrors);
+    if (request.params.userId === auth.userId) throw new ApiError(409, 'You cannot change your own role or access');
+    const user = await UserModel.findOne({ _id: request.params.userId, businessId: auth.businessId });
+    if (!user) throw new ApiError(404, 'Staff account was not found');
+    if (user.role === 'owner') throw new ApiError(403, 'The owner account cannot be changed here');
+    if (auth.role !== 'owner' && parsed.data.role === 'admin') throw new ApiError(403, 'Only the owner can assign the admin role');
+    const branch = await BranchModel.findOne({ _id: parsed.data.branchId, businessId: auth.businessId, isActive: true });
+    if (!branch) throw new ApiError(422, 'Select an active branch in this business');
+    user.role = parsed.data.role;
+    user.defaultBranchId = branch._id;
+    user.branchIds = [branch._id];
+    user.isActive = parsed.data.isActive;
+    await user.save();
+    response.json({ user: { id: user.id, role: user.role, branchId: branch.id, branchName: branch.name, isActive: user.isActive } });
   } catch (error: unknown) { next(error); }
 };
 
