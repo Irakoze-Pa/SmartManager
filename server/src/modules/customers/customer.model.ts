@@ -3,6 +3,10 @@ import { Schema, model, type InferSchemaType } from 'mongoose';
 const customerSchema = new Schema({
   businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
   name: { type: String, required: true, trim: true, minlength: 2, maxlength: 140 },
+  customerType: { type: String, enum: ['individual', 'company'], default: 'individual', required: true },
+  companyName: { type: String, trim: true, maxlength: 160, default: '' },
+  companyRegistrationNumber: { type: String, trim: true, maxlength: 80, default: '' },
+  companyTin: { type: String, trim: true, maxlength: 80, default: '' },
   phone: { type: String, trim: true, maxlength: 40, default: '' },
   email: { type: String, trim: true, lowercase: true, maxlength: 160, default: '' },
   notes: { type: String, trim: true, maxlength: 500, default: '' },

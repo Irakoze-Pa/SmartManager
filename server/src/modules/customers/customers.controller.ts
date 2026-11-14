@@ -5,7 +5,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import { SaleModel } from '../sales/sale.model.js';
 import { CustomerModel } from './customer.model.js';
 
-const customerInput = z.object({ name: z.string().trim().min(2).max(140), phone: z.string().trim().max(40).default(''), email: z.union([z.literal(''), z.email()]).default(''), notes: z.string().trim().max(500).default('') });
+const customerInput = z.object({ name: z.string().trim().min(2).max(140), customerType: z.enum(['individual', 'company']).default('individual'), companyName: z.string().trim().max(160).default(''), companyRegistrationNumber: z.string().trim().max(80).default(''), companyTin: z.string().trim().max(80).default(''), phone: z.string().trim().max(40).default(''), email: z.union([z.literal(''), z.email()]).default(''), notes: z.string().trim().max(500).default('') }).refine((data) => data.customerType !== 'company' || data.companyName.length >= 2, { path: ['companyName'], message: 'Company name is required for company customers' });
 const creditPaymentInput = z.object({ amount: z.coerce.number().positive().max(1_000_000_000), method: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer']) });
 const auth = (request: Express.Request) => { if (!request.auth) throw new ApiError(401, 'Authentication is required'); return request.auth; };
 
@@ -17,7 +17,23 @@ export const listCustomers: RequestHandler = async (request, response, next) => 
     { $group: { _id: '$customerId', visits: { $sum: 1 }, totalSpent: { $sum: '$total' }, creditBalance: { $sum: { $ifNull: ['$balanceDue', 0] } }, lastPurchaseAt: { $max: '$createdAt' } } },
   ]);
   const statsById = new Map(stats.map((item) => [item._id.toString(), item]));
-  response.json({ items: customers.map((customer) => { const activity = statsById.get(customer._id.toString()); return { id: customer._id.toString(), name: customer.name, phone: customer.phone, email: customer.email, notes: customer.notes, isActive: customer.isActive, visits: activity?.visits ?? 0, totalSpent: activity?.totalSpent ?? 0, creditBalance: activity?.creditBalance ?? 0, ...(activity?.lastPurchaseAt ? { lastPurchaseAt: activity.lastPurchaseAt } : {}) }; }) });
+  response.json({ items: customers.map((customer) => { const activity = statsById.get(customer._id.toString()); return { id: customer._id.toString(), name: customer.name, customerType: customer.customerType ?? 'individual', companyName: customer.companyName ?? '', companyRegistrationNumber: customer.companyRegistrationNumber ?? '', companyTin: customer.companyTin ?? '', phone: customer.phone, email: customer.email, notes: customer.notes, isActive: customer.isActive, visits: activity?.visits ?? 0, totalSpent: activity?.totalSpent ?? 0, creditBalance: activity?.creditBalance ?? 0, ...(activity?.lastPurchaseAt ? { lastPurchaseAt: activity.lastPurchaseAt } : {}) }; }) });
+} catch (error) { next(error); } };
+
+export const updateCustomer: RequestHandler = async (request, response, next) => { try {
+  const tenant = auth(request); const parsed = customerInput.safeParse(request.body);
+  if (!parsed.success || !isValidObjectId(request.params.customerId)) throw new ApiError(422, 'Customer details are invalid', parsed.success ? undefined : parsed.error.flatten().fieldErrors);
+  const customer = await CustomerModel.findOneAndUpdate({ _id: request.params.customerId, businessId: tenant.businessId }, parsed.data, { new: true, runValidators: true });
+  if (!customer) throw new ApiError(404, 'Customer was not found');
+  response.json({ customer: { id: customer.id, name: customer.name, customerType: customer.customerType, companyName: customer.companyName, companyRegistrationNumber: customer.companyRegistrationNumber, companyTin: customer.companyTin, phone: customer.phone, email: customer.email, notes: customer.notes, isActive: customer.isActive } });
+} catch (error) { next(error); } };
+
+export const deleteCustomer: RequestHandler = async (request, response, next) => { try {
+  const tenant = auth(request);
+  if (!isValidObjectId(request.params.customerId)) throw new ApiError(422, 'Customer is invalid');
+  const customer = await CustomerModel.findOneAndUpdate({ _id: request.params.customerId, businessId: tenant.businessId }, { isActive: false }, { new: true });
+  if (!customer) throw new ApiError(404, 'Customer was not found');
+  response.json({ customer: { id: customer.id, isActive: customer.isActive } });
 } catch (error) { next(error); } };
 
 export const createCustomer: RequestHandler = async (request, response, next) => { try {
