@@ -408,3 +408,4 @@ a:focus-visible {
 }
 [data-theme="dark"] .smartmanager-theme main .page-heading { border-color: var(--ui-line); }
 [data-theme="dark"] .smartmanager-theme main table thead { background: var(--ui-surface-muted); }
+@keyframes loading-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }

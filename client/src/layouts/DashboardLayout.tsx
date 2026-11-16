@@ -78,6 +78,7 @@ const kinyarwandaNavigation: Record<string, string> = {
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [successToast, setSuccessToast] = useState('');
+  const [apiLoading, setApiLoading] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>(readNotifications);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('smartmanager-theme') === 'dark');
@@ -107,6 +108,12 @@ export function DashboardLayout() {
     return () => { window.removeEventListener('smartshop:success', showToast); window.clearTimeout(timer); };
   }, []);
 
+  useEffect(() => {
+    const update = (event: Event) => setApiLoading(Boolean((event as CustomEvent<boolean>).detail));
+    window.addEventListener('smartshop:api-loading', update);
+    return () => window.removeEventListener('smartshop:api-loading', update);
+  }, []);
+
   const toggleTheme = () => setDarkMode((current) => {
     const next = !current;
     localStorage.setItem('smartmanager-theme', next ? 'dark' : 'light');
@@ -115,6 +122,7 @@ export function DashboardLayout() {
 
   return (
     <div data-theme={darkMode ? 'dark' : 'light'} className="smartmanager-theme min-h-screen bg-brand-canvas">
+      {apiLoading && <div role="status" aria-label="Loading data" className="fixed inset-x-0 top-0 z-[100] h-1 overflow-hidden bg-orange-100"><span className="block h-full w-1/3 animate-[loading-progress_1.2s_ease-in-out_infinite] rounded-full bg-brand-orange-500" /></div>}
       {sidebarOpen && (
         <button
           className="fixed inset-0 z-30 bg-brand-charcoal-950/55 lg:hidden"

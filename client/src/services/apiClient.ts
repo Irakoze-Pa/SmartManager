@@ -13,15 +13,22 @@ export const apiClient = axios.create({
   },
 });
 
+let pendingRequests = 0;
+const publishApiLoading = () => window.dispatchEvent(new CustomEvent('smartshop:api-loading', { detail: pendingRequests > 0 }));
+
 apiClient.interceptors.request.use((config) => {
+  pendingRequests += 1;
+  publishApiLoading();
   const token = window.localStorage.getItem('smartshop_session');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => { pendingRequests = Math.max(0, pendingRequests - 1); publishApiLoading(); return response; },
   (error: unknown) => {
+    pendingRequests = Math.max(0, pendingRequests - 1);
+    publishApiLoading();
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       window.localStorage.removeItem('smartshop_session');
       window.dispatchEvent(new Event('smartshop:tenant-session-expired'));
