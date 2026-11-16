@@ -38,6 +38,11 @@ export const getApiErrorMessage = (error: unknown, fallback: string): string => 
   if (typeof data !== 'object' || data === null || !('error' in data)) return fallback;
   const apiError = data.error;
   if (typeof apiError !== 'object' || apiError === null || !('message' in apiError)) return fallback;
-  return typeof apiError.message === 'string' ? apiError.message : fallback;
+  const message = typeof apiError.message === 'string' ? apiError.message : fallback;
+  if ('details' in apiError && typeof apiError.details === 'object' && apiError.details !== null) {
+    const detail = Object.entries(apiError.details).flatMap(([field, messages]) => Array.isArray(messages) ? messages.map(String).map((item) => `${field}: ${item}`) : []).at(0);
+    if (detail) return `${message} (${detail})`;
+  }
+  return message;
 };
 
