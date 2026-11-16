@@ -351,6 +351,19 @@ body {
   }
   #platform-payment-receipt { padding: 0 4mm !important; }
   #customer-payment-receipt { padding: 0 4mm !important; }
+  #platform-payment-receipt {
+    page: platform-receipt;
+    padding: 8mm !important;
+    font-size: 10pt;
+    line-height: 1.25;
+  }
+  #platform-payment-receipt header { padding-bottom: 4mm !important; border-bottom-width: 2px; }
+  #platform-payment-receipt header h1 { margin-top: 2mm !important; font-size: 20pt !important; }
+  #platform-payment-receipt section { margin-top: 5mm !important; }
+  #platform-payment-receipt section > div,
+  #platform-payment-receipt dl { gap: 3mm !important; padding: 3mm !important; }
+  #platform-payment-receipt footer { margin-top: 7mm !important; padding-top: 3mm !important; }
+  @page platform-receipt { size: A4; margin: 0; }
   @page { size: A4; margin: 14mm; }
 }
 
