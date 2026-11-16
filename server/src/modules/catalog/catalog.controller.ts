@@ -9,8 +9,8 @@ const auth = (request: Express.Request) => { if (!request.auth) throw new ApiErr
 const validateInventoryRole = async (businessId: string, role: string) => { if (role === 'standard') return; const business = await BusinessModel.findOne({ _id: businessId }).select('industry').lean(); if (business?.industry !== 'manufacturing') throw new ApiError(422, 'Raw material and finished good classifications are only available to manufacturers'); };
 const resolveProductPrices = <T extends { sellingPrice?: number | undefined; packageName: string; packageSize?: number | undefined; packageSellingPrice?: number | undefined }>(fields: T) => {
   if (fields.packageName && fields.packageSize !== undefined) {
-    const sellingPrice = fields.sellingPrice ?? Math.round((fields.packageSellingPrice! / fields.packageSize) * 100) / 100;
-    const packageSellingPrice = fields.packageSellingPrice ?? Math.round(sellingPrice * fields.packageSize * 100) / 100;
+    const sellingPrice = fields.sellingPrice ?? (fields.packageSellingPrice !== undefined ? Math.round((fields.packageSellingPrice / fields.packageSize) * 100) / 100 : 0);
+    const packageSellingPrice = fields.packageSellingPrice ?? (fields.sellingPrice !== undefined ? Math.round(sellingPrice * fields.packageSize * 100) / 100 : 0);
     return { ...fields, sellingPrice, packageSellingPrice };
   }
   return { ...fields, sellingPrice: fields.sellingPrice! };

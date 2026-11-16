@@ -17,8 +17,7 @@ export const productSchema = z.object({
 }).superRefine((value, context) => {
   const configured = Boolean(value.packageName) || value.packageSize !== undefined || value.packageSellingPrice !== undefined;
   if (configured && (!value.packageName || value.packageSize === undefined)) context.addIssue({ code: 'custom', message: 'Package name and units per package are required', path: ['packageName'] });
-  if (configured && value.sellingPrice === undefined && value.packageSellingPrice === undefined) context.addIssue({ code: 'custom', message: 'Enter a unit price, a package price, or both', path: ['sellingPrice'] });
-  if (!configured && value.sellingPrice === undefined) context.addIssue({ code: 'custom', message: 'Unit selling price is required', path: ['sellingPrice'] });
+  // Selling price can be set at checkout; missing catalog prices are saved as zero.
 });
 export const productStatusSchema = z.object({ isActive: z.boolean() });
 export const productImageSchema = z.object({ imageUrl: productImage });
