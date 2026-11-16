@@ -60,6 +60,9 @@ export const recordCreditPayment: RequestHandler = async (request, response, nex
   const outstanding = sales.reduce((sum, sale) => sum + sale.balanceDue, 0);
   if (outstanding <= 0) throw new ApiError(409, 'This customer has no outstanding credit');
   if (parsed.data.amount > outstanding) throw new ApiError(422, 'Payment cannot be greater than the outstanding credit');
+  const paymentId = new Types.ObjectId();
+  const paidAt = new Date();
+  const allocations: Array<{ receiptNumber: string; amount: number }> = [];
   let remaining = parsed.data.amount;
   for (const sale of sales) {
     if (remaining <= 0) break;
@@ -67,11 +70,12 @@ export const recordCreditPayment: RequestHandler = async (request, response, nex
     sale.amountPaid = Math.round((sale.amountPaid + applied) * 100) / 100;
     sale.balanceDue = Math.round((sale.balanceDue - applied) * 100) / 100;
     sale.paymentStatus = sale.balanceDue === 0 ? 'paid' : 'partial';
-    sale.creditPayments.push({ amount: applied, method: parsed.data.method, receivedBy: new Types.ObjectId(tenant.userId), receivedAt: new Date() });
+    sale.creditPayments.push({ paymentId, amount: applied, method: parsed.data.method, receivedBy: new Types.ObjectId(tenant.userId), receivedAt: paidAt });
     await sale.save();
+    allocations.push({ receiptNumber: sale.receiptNumber, amount: applied });
     remaining = Math.round((remaining - applied) * 100) / 100;
   }
-  response.status(201).json({ payment: { amount: parsed.data.amount, method: parsed.data.method, balanceDue: Math.round((outstanding - parsed.data.amount) * 100) / 100 } });
+  response.status(201).json({ payment: { id: paymentId.toString(), amount: parsed.data.amount, method: parsed.data.method, paidAt, balanceDue: Math.round((outstanding - parsed.data.amount) * 100) / 100, allocations } });
 } catch (error) { next(error); } };
 
 export const getCustomerStatement: RequestHandler = async (request, response, next) => { try {

@@ -6,10 +6,11 @@ import { useNavigate } from 'react-router-dom';
 import { PageHeading } from '../components/PageHeading';
 import { useAuth } from '../features/auth/AuthContext';
 import { getApiErrorMessage } from '../services/apiClient';
-import { createCustomer, deleteCustomer, getCustomers, recordCreditPayment, setCustomerStatus, updateCustomer, type CustomerInput } from '../services/customerService';
+import { createCustomer, deleteCustomer, getCustomers, recordCreditPayment, setCustomerStatus, updateCustomer, type CustomerCreditPayment, type CustomerInput } from '../services/customerService';
 import type { Customer } from '../types/api';
 import { notifySuccess } from '../utils/notifications';
 import { DataLoading } from '../components/DataLoading';
+import { CustomerPaymentReceipt } from '../components/CustomerPaymentReceipt';
 
 const money = (value: number) => `${value.toLocaleString()} RWF`;
 
@@ -23,6 +24,7 @@ export function CustomersPage() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerType, setCustomerType] = useState<'individual' | 'company'>('individual');
   const [paymentCustomer, setPaymentCustomer] = useState<Customer | null>(null);
+  const [creditReceipt, setCreditReceipt] = useState<{ payment: CustomerCreditPayment; customerName: string } | null>(null);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -42,7 +44,7 @@ export function CustomersPage() {
   };
   const collectPayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); if (!paymentCustomer) return; setBusy(true); setError(''); setNotice(''); const data = new FormData(event.currentTarget);
-    try { const amount = Number(data.get('amount')); await recordCreditPayment(paymentCustomer.id, { amount, method: String(data.get('method')) as 'cash' | 'mtn_momo' | 'airtel_money' | 'card' | 'bank_transfer' }); setNotice(`Payment of ${money(amount)} recorded for ${paymentCustomer.name}.`); notifySuccess(`Payment of ${money(amount)} recorded.`); setPaymentCustomer(null); await load(); }
+    try { const amount = Number(data.get('amount')); const payment = await recordCreditPayment(paymentCustomer.id, { amount, method: String(data.get('method')) as CustomerCreditPayment['method'] }); const customerName = paymentCustomer.customerType === 'company' ? paymentCustomer.companyName : paymentCustomer.name; setNotice(`Payment of ${money(amount)} recorded for ${customerName}.`); notifySuccess(`Payment of ${money(amount)} recorded.`); setCreditReceipt({ payment, customerName }); setPaymentCustomer(null); await load(); }
     catch (requestError) { setError(getApiErrorMessage(requestError, 'Credit payment could not be recorded.')); }
     finally { setBusy(false); }
   };
@@ -50,6 +52,7 @@ export function CustomersPage() {
   const remove = async (customer: Customer) => { if (!window.confirm(`Delete ${customer.name}? Their sales and statements will be kept, and the customer will be marked inactive.`)) return; setBusy(true); setError(''); try { await deleteCustomer(customer.id); await load(); } catch (requestError) { setError(getApiErrorMessage(requestError, 'Customer could not be deleted.')); } finally { setBusy(false); } };
 
   return <div className="mx-auto max-w-[1300px]">
+    {creditReceipt && identity && <CustomerPaymentReceipt payment={creditReceipt.payment} customer={creditReceipt.customerName} business={identity.business} receivedBy={`${identity.user.firstName} ${identity.user.lastName}`} onClose={() => setCreditReceipt(null)} />}
     <PageHeading eyebrow="Relationships" title="Customers" description="Customers" action={<button onClick={() => { if (showForm) { setShowForm(false); setEditingCustomer(null); } else { setEditingCustomer(null); setCustomerType('individual'); setShowForm(true); } }} className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 px-4 py-3 text-sm font-bold text-white">{showForm ? <X size={17} /> : <Plus size={17} />}{showForm ? 'Close form' : 'Add customer'}</button>} />
     {error && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
     {notice && <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</div>}

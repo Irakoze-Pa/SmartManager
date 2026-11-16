@@ -13,6 +13,7 @@ const saleItemSchema = new Schema({
 }, { _id: false });
 
 const creditPaymentSchema = new Schema({
+  paymentId: { type: Schema.Types.ObjectId, index: true },
   amount: { type: Number, required: true, min: 0.01 },
   method: { type: String, enum: ['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer'], required: true },
   receivedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },

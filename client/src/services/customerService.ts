@@ -20,8 +20,9 @@ export const setCustomerStatus = async (id: string, isActive: boolean): Promise<
   await apiClient.patch(`/customers/${id}/status`, { isActive });
 };
 
-export const recordCreditPayment = async (id: string, input: { amount: number; method: 'cash' | 'mtn_momo' | 'airtel_money' | 'card' | 'bank_transfer' }): Promise<void> => {
-  await apiClient.post(`/customers/${id}/payments`, input);
+export interface CustomerCreditPayment { id: string; amount: number; method: 'cash' | 'mtn_momo' | 'airtel_money' | 'card' | 'bank_transfer'; paidAt: string; balanceDue: number; allocations: Array<{ receiptNumber: string; amount: number }> }
+export const recordCreditPayment = async (id: string, input: { amount: number; method: CustomerCreditPayment['method'] }): Promise<CustomerCreditPayment> => {
+  return (await apiClient.post<{ payment: CustomerCreditPayment }>(`/customers/${id}/payments`, input)).data.payment;
 };
 
 export const getCustomerStatement = async (id: string): Promise<AccountStatement> => {
