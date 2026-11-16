@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { apiBaseUrl } from './apiClient';
-import type { PlatformAdmin, PlatformBusiness, PlatformSummary, PlatformUser, RegisterRequest, SubscriptionPlan, SubscriptionStatus } from '../types/api';
+import type { PlatformAdmin, PlatformBusiness, PlatformPayment, PlatformSummary, PlatformUser, RegisterRequest, SubscriptionPlan, SubscriptionStatus } from '../types/api';
 
 const platformApi = axios.create({ baseURL: apiBaseUrl, timeout: 10_000, headers: { 'Content-Type': 'application/json' } });
 platformApi.interceptors.request.use((config) => {
@@ -28,6 +28,10 @@ export const createPlatformBusiness = async (input: RegisterRequest): Promise<vo
   await platformApi.post('/platform/businesses', input);
 };
 export const getPlatformUsers = async (): Promise<{ items: PlatformUser[] }> => (await platformApi.get('/platform/users')).data;
+export const getPlatformPayments = async (params: { page?: number; limit?: number; search?: string } = {}): Promise<{ items: PlatformPayment[]; pagination: { page: number; limit: number; total: number; pages: number } }> => (await platformApi.get('/platform/payments', { params })).data;
+export const recordPlatformPayment = async (businessId: string, input: { amount: number; method: PlatformPayment['method']; reference: string; paidAt: string; plan: SubscriptionPlan; periodEnd: string }): Promise<void> => {
+  await platformApi.post(`/platform/businesses/${businessId}/payments`, input);
+};
 export const updateBusinessStatus = async (id: string, status: PlatformBusiness['status']): Promise<void> => {
   await platformApi.patch(`/platform/businesses/${id}/status`, { status });
 };

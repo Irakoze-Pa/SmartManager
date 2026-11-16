@@ -108,7 +108,9 @@ npm run build
 - `GET /api/platform/auth/me` — current platform administrator
 - `GET /api/platform/summary` — platform totals
 - `GET /api/platform/businesses` — paginated tenant oversight
+- `GET /api/platform/payments` — paginated, searchable platform-recorded subscription payments
 - `POST /api/platform/businesses` — superadmin-only company and owner onboarding
+- `POST /api/platform/businesses/:businessId/payments` — record an already-collected RWF subscription payment, activate its plan through the supplied coverage date, and audit the action
 - `GET /api/platform/users` — platform user oversight
 - `PATCH /api/platform/businesses/:businessId/status` — suspend or reactivate a tenant
 - `PATCH /api/platform/businesses/:businessId/users/:userId/password` — audited user password reset
@@ -118,12 +120,14 @@ npm run build
 - `PATCH /api/tenant-admin/staff/:userId/status` — activate or deactivate staff access
 - `GET/POST /api/catalog/categories` — tenant categories
 - `GET/POST /api/catalog/products` — tenant product catalog
+- Product setup accepts an optional barcode; barcode values are unique within a business and can be scanned at checkout
 - `PATCH /api/catalog/products/:productId/status` — product availability
 - `PATCH /api/catalog/products/:productId/package` — configure an optional selling package and base-unit conversion
 - `PATCH /api/catalog/products/:productId/image` — add, replace, or remove a compressed product image
 - `GET /api/inventory/branches` — active branches available to inventory users
 - `GET /api/inventory?branchId=...` — branch stock balances
 - `POST /api/inventory/adjustments` — audited stock quantity adjustment
+- Supermarket inventory supports counted-quantity adjustments and reason-coded expired or damaged goods write-offs through the same audited endpoint
 - `GET/POST /api/inventory/transfers` — list or complete atomic branch stock transfers
 - `GET/POST /api/purchasing/suppliers` — list or create tenant suppliers
 - `PATCH /api/purchasing/suppliers/:supplierId/status` — activate or deactivate a supplier
@@ -157,7 +161,7 @@ Then visit `http://localhost:5173/platform/login`. Do not add these credentials 
 
 ## Current status
 
-Implemented: platform and tenant identity, platform oversight, tenant branches and staff, role-gated administration, tenant-scoped categories and products with base/package unit conversion, customers and linked purchase history, suppliers, purchase orders, per-branch stock balances and transfers, non-negative inventory enforcement, transactionally recorded stock receipts and adjustments, Atlas-transactional point-of-sale checkout, expense tracking, period-based profit summaries, business reporting, and platform-managed subscription state.
+Implemented: platform and tenant identity, supermarket and general retail sector setup, platform oversight, manual platform-recorded subscription payment register, tenant branches and staff, role-gated administration, tenant-scoped categories and products with barcode lookup and base/package unit conversion, customers and linked purchase history, suppliers, purchase orders, per-branch stock balances and transfers, supermarket stock counts and reason-coded waste adjustments, non-negative inventory enforcement, transactionally recorded stock receipts and adjustments, Atlas-transactional point-of-sale checkout, expense tracking, period-based profit summaries, business reporting, and platform-managed subscription state.
 
 Not implemented by design: MFA, email delivery/invitations, self-service password recovery, forced temporary-password changes, refresh-token rotation, custom permission policies, partial purchase-order receipts, automated payment-gateway billing, full double-entry accounting, and offline POS.
 

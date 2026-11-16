@@ -17,7 +17,7 @@ export const registerSchema = z.object({
   tin: z.string().trim().max(40).default(''),
   registrationNumber: z.string().trim().max(60).default(''),
   businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
-  industry: z.enum(['retail', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']).default('retail'),
+  industry: z.enum(['retail', 'supermarket', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']).default('retail'),
   branchName: z.preprocess(
     (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
     z.string().trim().min(2).max(100).optional(),
@@ -42,7 +42,7 @@ export const businessProfileSchema = z.object({
   tin: z.string().trim().max(40),
   registrationNumber: z.string().trim().max(60).default(''),
   businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
-  industry: z.enum(['retail', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']).default('retail'),
+  industry: z.enum(['retail', 'supermarket', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']).default('retail'),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

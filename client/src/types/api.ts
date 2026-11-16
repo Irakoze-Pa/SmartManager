@@ -35,7 +35,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
 }
-export type BusinessIndustry = 'retail' | 'manufacturing' | 'real_estate' | 'restaurant' | 'building_materials' | 'logistics' | 'school' | 'construction';
+export type BusinessIndustry = 'retail' | 'supermarket' | 'manufacturing' | 'real_estate' | 'restaurant' | 'building_materials' | 'logistics' | 'school' | 'construction';
 
 export interface LoginRequest {
   email: string;
@@ -43,17 +43,18 @@ export interface LoginRequest {
 }
 
 export interface PlatformAdmin { id: string; name: string; email: string }
-export interface PlatformSummary { businesses: number; activeBusinesses: number; suspendedBusinesses: number; users: number; branches: number; sectors: Array<{ industry: BusinessIndustry; count: number }>; plans?: Array<{ plan: SubscriptionPlan; count: number }>; attentionBusinesses?: number; trialBusinesses?: number }
+export interface PlatformSummary { businesses: number; activeBusinesses: number; suspendedBusinesses: number; users: number; branches: number; sectors: Array<{ industry: BusinessIndustry; count: number }>; plans?: Array<{ plan: SubscriptionPlan; count: number }>; attentionBusinesses?: number; trialBusinesses?: number; paymentCount?: number; paymentVolume?: number }
 export type SubscriptionPlan = 'trial' | 'starter' | 'growth' | 'enterprise';
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'cancelled';
 export interface Subscription { plan: SubscriptionPlan; status: SubscriptionStatus; startedAt: string; currentPeriodEnd: string }
 export interface PlatformBusiness { id: string; name: string; slug: string; industry: BusinessIndustry; businessType: string; status: 'active' | 'suspended'; subscription: Subscription; createdAt: string; users: number; branches: number }
 export interface PlatformUser { id: string; firstName: string; lastName: string; email: string; role: UserRole; isActive: boolean; businessId: string; businessName: string }
+export interface PlatformPayment { id: string; businessId: string; businessName: string; businessSlug: string; amount: number; currency: 'RWF'; method: 'cash' | 'mtn_momo' | 'airtel_money' | 'bank_transfer' | 'card' | 'other'; reference: string; paidAt: string; plan: SubscriptionPlan; periodEnd: string; recordedByName: string }
 export interface TenantBranch { id: string; name: string; code: string; isPrimary: boolean; isActive: boolean }
 export interface TenantStaff { id: string; firstName: string; lastName: string; email: string; role: UserRole; isActive: boolean; branchId: string; branchName: string }
 export type ProductUnit = 'piece' | 'box' | 'kg' | 'litre' | 'metre' | 'bag' | 'set';
 export interface Category { id: string; name: string }
-export interface Product { id: string; name: string; imageUrl?: string; sku: string; categoryId: string; categoryName: string; unit: ProductUnit; costPrice: number; sellingPrice: number; packageName?: string; packageSize?: number; packageSellingPrice?: number; reorderLevel: number; isActive: boolean }
+export interface Product { id: string; name: string; imageUrl?: string; sku: string; barcode?: string; categoryId: string; categoryName: string; unit: ProductUnit; costPrice: number; sellingPrice: number; packageName?: string; packageSize?: number; packageSellingPrice?: number; reorderLevel: number; isActive: boolean }
 export interface InventoryItem { branchId: string; branchName: string; productId: string; productName: string; sku: string; unit: ProductUnit; reorderLevel: number; quantity: number }
 export type PaymentMethod = 'cash' | 'mtn_momo' | 'airtel_money' | 'card' | 'bank_transfer' | 'credit' | 'mobile_money';
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';

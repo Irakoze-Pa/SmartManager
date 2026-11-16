@@ -2,18 +2,25 @@
 
 [data-platform-view="businesses"] > section:nth-of-type(1),
 [data-platform-view="businesses"] > section:nth-of-type(3),
+[data-platform-view="businesses"] > section:nth-of-type(4),
 [data-platform-view="users"] > section:nth-of-type(1),
-[data-platform-view="users"] > section:nth-of-type(2) {
+[data-platform-view="users"] > section:nth-of-type(2),
+[data-platform-view="users"] > section:nth-of-type(4),
+[data-platform-view="payments"] > section:nth-of-type(1),
+[data-platform-view="payments"] > section:nth-of-type(2),
+[data-platform-view="payments"] > section:nth-of-type(3) {
   display: none;
 }
 
 [data-platform-view="overview"] > section:nth-of-type(2),
-[data-platform-view="overview"] > section:nth-of-type(3) {
+[data-platform-view="overview"] > section:nth-of-type(3),
+[data-platform-view="overview"] > section:nth-of-type(4) {
   display: none;
 }
 
 [data-platform-view="businesses"] > [data-overview-insights],
-[data-platform-view="users"] > [data-overview-insights] {
+[data-platform-view="users"] > [data-overview-insights],
+[data-platform-view="payments"] > [data-overview-insights] {
   display: none;
 }
 

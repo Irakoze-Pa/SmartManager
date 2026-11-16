@@ -8,6 +8,7 @@ export const productSchema = z.object({
   name: z.string().trim().min(2).max(140),
   imageUrl: productImage.default(''),
   sku: z.string().trim().min(2).max(50).regex(/^[A-Za-z0-9_-]+$/).transform((value) => value.toUpperCase()),
+  barcode: z.string().trim().max(64).regex(/^[A-Za-z0-9_-]*$/).default(''),
   categoryId: z.string().min(1), unit: z.enum(productUnits),
   costPrice: z.coerce.number().min(0), sellingPrice: z.coerce.number().min(0), reorderLevel: z.coerce.number().min(0).default(0),
   packageName: z.string().trim().max(40).default(''),

@@ -6,6 +6,7 @@ const productSchema = new Schema({
   categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
   name: { type: String, required: true, trim: true, minlength: 2, maxlength: 140 },
   sku: { type: String, required: true, trim: true, uppercase: true, maxlength: 50 },
+  barcode: { type: String, trim: true, maxlength: 64 },
   imageUrl: { type: String, trim: true, maxlength: 500_000, default: '' },
   unit: { type: String, enum: productUnits, required: true },
   costPrice: { type: Number, required: true, min: 0 },
@@ -17,6 +18,7 @@ const productSchema = new Schema({
   isActive: { type: Boolean, required: true, default: true },
 }, { timestamps: true, versionKey: false });
 productSchema.index({ businessId: 1, sku: 1 }, { unique: true });
+productSchema.index({ businessId: 1, barcode: 1 }, { unique: true, partialFilterExpression: { barcode: { $type: 'string' } } });
 productSchema.index({ businessId: 1, name: 1 });
 export type Product = InferSchemaType<typeof productSchema>;
 export const ProductModel = model<Product>('Product', productSchema);
