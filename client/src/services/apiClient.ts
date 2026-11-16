@@ -32,7 +32,8 @@ apiClient.interceptors.response.use(
 
 export const getApiErrorMessage = (error: unknown, fallback: string): string => {
   if (!axios.isAxiosError(error)) return fallback;
-  if (error.code === 'ERR_NETWORK') return `Cannot reach the API at ${apiBaseUrl}. Check the deployed API URL and allowed website origin.`;
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'The SmartManager service is taking longer than expected to respond. It may be waking up—please try again shortly.';
+  if (error.code === 'ERR_NETWORK') return `SmartManager cannot reach its API service${apiBaseUrl ? ` at ${apiBaseUrl}` : ''}. Your internet may be connected while the service is unavailable. Please try again shortly.`;
   const data: unknown = error.response?.data;
   if (typeof data !== 'object' || data === null || !('error' in data)) return fallback;
   const apiError = data.error;

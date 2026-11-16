@@ -53,7 +53,14 @@ export const listBusinesses: RequestHandler = async (request, response, next): P
     const page = Math.max(1, Number(request.query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(request.query.limit) || 20));
     const search = typeof request.query.search === 'string' ? request.query.search.trim() : '';
-    const filter = search ? { name: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } } : {};
+    const status = request.query.status === 'active' || request.query.status === 'suspended' ? request.query.status : undefined;
+    const plan = ['trial', 'starter', 'growth', 'enterprise'].includes(String(request.query.plan)) ? String(request.query.plan) : undefined;
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const filter = {
+      ...(status ? { status } : {}),
+      ...(plan ? { 'subscription.plan': plan } : {}),
+      ...(search ? { $or: ['name', 'slug', 'industry'].map((field) => ({ [field]: { $regex: escapedSearch, $options: 'i' } })) } : {}),
+    };
     const [businesses, total] = await Promise.all([
       BusinessModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       BusinessModel.countDocuments(filter),
@@ -126,11 +133,14 @@ export const resetPlatformUserPassword: RequestHandler = async (request, respons
 
 export const platformSummary: RequestHandler = async (_request, response, next): Promise<void> => {
   try {
-    const [businesses, activeBusinesses, users, branches, sectors] = await Promise.all([
+    const [businesses, activeBusinesses, users, branches, sectors, plans, attentionBusinesses, trialBusinesses] = await Promise.all([
       BusinessModel.countDocuments(), BusinessModel.countDocuments({ status: 'active' }), UserModel.countDocuments(), BranchModel.countDocuments(),
       BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $cond: [{ $eq: ['$industry', 'clinic'] }, 'building_materials', { $ifNull: ['$industry', 'retail'] }] }, count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+      BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $ifNull: ['$subscription.plan', 'trial'] }, count: { $sum: 1 } } }]),
+      BusinessModel.countDocuments({ $or: [{ status: 'suspended' }, { 'subscription.status': { $in: ['past_due', 'cancelled'] } }] }),
+      BusinessModel.countDocuments({ $or: [{ 'subscription.status': 'trialing' }, { subscription: { $exists: false } }] }),
     ]);
-    response.json({ businesses, activeBusinesses, suspendedBusinesses: businesses - activeBusinesses, users, branches, sectors: sectors.map((item) => ({ industry: item._id, count: item.count })) });
+    response.json({ businesses, activeBusinesses, suspendedBusinesses: businesses - activeBusinesses, users, branches, sectors: sectors.map((item) => ({ industry: item._id, count: item.count })), plans: plans.map((item) => ({ plan: item._id, count: item.count })), attentionBusinesses, trialBusinesses });
   } catch (error: unknown) { next(error); }
 };
 

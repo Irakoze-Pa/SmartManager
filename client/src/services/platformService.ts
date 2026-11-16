@@ -23,7 +23,7 @@ export const platformLogin = async (email: string, password: string): Promise<{ 
   (await platformApi.post('/platform/auth/login', { email, password })).data;
 export const getPlatformMe = async (): Promise<{ admin: PlatformAdmin }> => (await platformApi.get('/platform/auth/me')).data;
 export const getPlatformSummary = async (): Promise<PlatformSummary> => (await platformApi.get('/platform/summary')).data;
-export const getPlatformBusinesses = async (): Promise<{ items: PlatformBusiness[] }> => (await platformApi.get('/platform/businesses')).data;
+export const getPlatformBusinesses = async (params: { page?: number; limit?: number; search?: string; status?: string; plan?: string } = {}): Promise<{ items: PlatformBusiness[]; pagination: { page: number; limit: number; total: number; pages: number } }> => (await platformApi.get('/platform/businesses', { params })).data;
 export const createPlatformBusiness = async (input: RegisterRequest): Promise<void> => {
   await platformApi.post('/platform/businesses', input);
 };

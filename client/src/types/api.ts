@@ -43,7 +43,7 @@ export interface LoginRequest {
 }
 
 export interface PlatformAdmin { id: string; name: string; email: string }
-export interface PlatformSummary { businesses: number; activeBusinesses: number; suspendedBusinesses: number; users: number; branches: number; sectors: Array<{ industry: BusinessIndustry; count: number }> }
+export interface PlatformSummary { businesses: number; activeBusinesses: number; suspendedBusinesses: number; users: number; branches: number; sectors: Array<{ industry: BusinessIndustry; count: number }>; plans?: Array<{ plan: SubscriptionPlan; count: number }>; attentionBusinesses?: number; trialBusinesses?: number }
 export type SubscriptionPlan = 'trial' | 'starter' | 'growth' | 'enterprise';
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'cancelled';
 export interface Subscription { plan: SubscriptionPlan; status: SubscriptionStatus; startedAt: string; currentPeriodEnd: string }

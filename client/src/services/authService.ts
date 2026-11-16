@@ -5,7 +5,8 @@ export const registerBusiness = async (input: RegisterRequest): Promise<AuthResp
   (await apiClient.post<AuthResponse>('/auth/register', input)).data;
 
 export const login = async (input: LoginRequest): Promise<AuthResponse> =>
-  (await apiClient.post<AuthResponse>('/auth/login', input)).data;
+  // The production API runs on a scale-to-zero host and can need time to wake.
+  (await apiClient.post<AuthResponse>('/auth/login', input, { timeout: 90_000 })).data;
 
 export const getCurrentIdentity = async (): Promise<Identity> =>
   (await apiClient.get<Identity>('/auth/me')).data;
