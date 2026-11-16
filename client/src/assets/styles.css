@@ -335,6 +335,22 @@ body {
   #platform-payment-receipt,
   #customer-payment-receipt,
   #account-statement-print { position: absolute; inset: 0; width: 100%; }
+  #platform-payment-receipt,
+  #customer-payment-receipt {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #platform-payment-receipt header,
+  #platform-payment-receipt section,
+  #platform-payment-receipt footer,
+  #customer-payment-receipt header,
+  #customer-payment-receipt section,
+  #customer-payment-receipt footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #platform-payment-receipt { padding: 0 4mm !important; }
+  #customer-payment-receipt { padding: 0 4mm !important; }
   @page { size: A4; margin: 14mm; }
 }
 
