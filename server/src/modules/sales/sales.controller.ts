@@ -118,21 +118,27 @@ export const listSales: RequestHandler = async (request, response, next): Promis
 export const salesAnalytics: RequestHandler = async (request, response, next): Promise<void> => {
   try {
     const auth = requireAuth(request);
-    const to = typeof request.query.to === 'string' ? new Date(`${request.query.to}T23:59:59.999`) : new Date();
-    const from = typeof request.query.from === 'string' ? new Date(`${request.query.from}T00:00:00.000`) : new Date(to.getTime() - 6 * 86_400_000);
-    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) throw new ApiError(422, 'Sales analytics date range is invalid');
+    const parseDate = (value: unknown, endOfDay = false): Date | undefined => {
+      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+      const date = new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`);
+      return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value ? undefined : date;
+    };
+    const to = typeof request.query.to === 'string' ? parseDate(request.query.to, true) : new Date();
+    const from = typeof request.query.from === 'string' ? parseDate(request.query.from) : to ? new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() - 6)) : undefined;
+    if (!from || !to || from > to) throw new ApiError(422, 'Sales analytics date range is invalid');
     const user = await UserModel.findById(auth.userId).select('branchIds role').lean(); if (!user) throw new ApiError(401, 'User account is unavailable');
     const requestedBranch = typeof request.query.branchId === 'string' ? request.query.branchId : undefined;
     if (requestedBranch && !isValidObjectId(requestedBranch)) throw new ApiError(422, 'Sales analytics branch is invalid');
     if (requestedBranch && !['owner', 'admin'].includes(user.role) && !user.branchIds.some((id) => id.toString() === requestedBranch)) throw new ApiError(403, 'You do not have access to this branch');
     const branchFilter = requestedBranch ? { branchId: requestedBranch } : !['owner', 'admin'].includes(user.role) ? { branchId: { $in: user.branchIds } } : {};
-    const match = { businessId: auth.businessId, status: 'completed', createdAt: { $gte: from, $lte: to }, ...branchFilter };
+    // Older saved sales may predate the status field; they are completed unless explicitly voided.
+    const match = { businessId: auth.businessId, $or: [{ status: 'completed' }, { status: { $exists: false } }], createdAt: { $gte: from, $lte: to }, ...branchFilter };
     const [days, products] = await Promise.all([
       SaleModel.aggregate<{ date: string; revenue: number; transactions: number }>([{ $match: match }, { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$total' }, transactions: { $sum: 1 } } }, { $sort: { _id: 1 } }, { $project: { _id: 0, date: '$_id', revenue: 1, transactions: 1 } }]),
       SaleModel.aggregate<{ productId: unknown; name: string; sku: string; quantity: number; revenue: number }>([{ $match: match }, { $unwind: '$items' }, { $group: { _id: '$items.productId', name: { $first: '$items.name' }, sku: { $first: '$items.sku' }, quantity: { $sum: '$items.quantity' }, revenue: { $sum: '$items.lineTotal' } } }, { $sort: { quantity: -1, revenue: -1 } }, { $limit: 8 }, { $project: { _id: 0, productId: '$_id', name: 1, sku: 1, quantity: 1, revenue: 1 } }]),
     ]);
     const dateMap = new Map(days.map((day) => [day.date, day]));
-    const daily = Array.from({ length: 7 }, (_, index) => { const date = new Date(to); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - (6 - index)); const key = date.toISOString().slice(0, 10); const result = dateMap.get(key); return { date: key, revenue: result?.revenue ?? 0, transactions: result?.transactions ?? 0 }; }).filter((day) => day.date >= from.toISOString().slice(0, 10) && day.date <= to.toISOString().slice(0, 10));
+    const daily = Array.from({ length: 7 }, (_, index) => { const date = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() - (6 - index))); const key = date.toISOString().slice(0, 10); const result = dateMap.get(key); return { date: key, revenue: result?.revenue ?? 0, transactions: result?.transactions ?? 0 }; }).filter((day) => day.date >= from.toISOString().slice(0, 10) && day.date <= to.toISOString().slice(0, 10));
     response.json({ from, to, daily, topProducts: products.map((product) => ({ ...product, productId: String(product.productId) })) });
   } catch (error) { next(error); }
 };

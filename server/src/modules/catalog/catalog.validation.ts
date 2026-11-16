@@ -10,13 +10,15 @@ export const productSchema = z.object({
   sku: z.string().trim().min(2).max(50).regex(/^[A-Za-z0-9_-]+$/).transform((value) => value.toUpperCase()),
   barcode: z.string().trim().max(64).regex(/^[A-Za-z0-9_-]*$/).default(''),
   categoryId: z.string().min(1), unit: z.enum(productUnits), inventoryRole: z.enum(inventoryRoles).default('standard'),
-  costPrice: z.coerce.number().min(0), sellingPrice: z.coerce.number().min(0), reorderLevel: z.coerce.number().min(0).default(0),
+  costPrice: z.coerce.number().min(0), sellingPrice: z.preprocess((value) => value === '' || value === undefined ? undefined : value, z.coerce.number().min(0).optional()), reorderLevel: z.coerce.number().min(0).default(0),
   packageName: z.string().trim().max(40).default(''),
   packageSize: z.preprocess((value) => value === '' || value === undefined ? undefined : value, z.coerce.number().positive().optional()),
   packageSellingPrice: z.preprocess((value) => value === '' || value === undefined ? undefined : value, z.coerce.number().min(0).optional()),
 }).superRefine((value, context) => {
   const configured = Boolean(value.packageName) || value.packageSize !== undefined || value.packageSellingPrice !== undefined;
-  if (configured && (!value.packageName || value.packageSize === undefined || value.packageSellingPrice === undefined)) context.addIssue({ code: 'custom', message: 'Package name, size, and selling price are all required', path: ['packageName'] });
+  if (configured && (!value.packageName || value.packageSize === undefined)) context.addIssue({ code: 'custom', message: 'Package name and units per package are required', path: ['packageName'] });
+  if (configured && value.sellingPrice === undefined && value.packageSellingPrice === undefined) context.addIssue({ code: 'custom', message: 'Enter a unit price, a package price, or both', path: ['sellingPrice'] });
+  if (!configured && value.sellingPrice === undefined) context.addIssue({ code: 'custom', message: 'Unit selling price is required', path: ['sellingPrice'] });
 });
 export const productStatusSchema = z.object({ isActive: z.boolean() });
 export const productImageSchema = z.object({ imageUrl: productImage });
