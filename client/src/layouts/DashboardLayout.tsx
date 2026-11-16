@@ -39,6 +39,8 @@ interface NavigationItem {
   group: 'Workspace' | 'Operations' | 'Insights' | 'Administration';
 }
 
+interface AppNotification { id: string; message: string; createdAt: string; read: boolean }
+
 const navigation: NavigationItem[] = [
   { label: 'Overview', path: '/', icon: LayoutDashboard, available: true, group: 'Workspace' },
   { label: 'Restaurant', path: '/restaurant', icon: Utensils, available: true, group: 'Operations' },
@@ -68,6 +70,8 @@ const kinyarwandaNavigation: Record<string, string> = {
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [successToast, setSuccessToast] = useState('');
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => { try { const saved: unknown = JSON.parse(localStorage.getItem('smartmanager-notifications') ?? '[]'); return Array.isArray(saved) ? saved as AppNotification[] : []; } catch { return []; } });
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('smartmanager-theme') === 'dark');
   const location = useLocation();
   const { identity, logout } = useAuth();
@@ -87,6 +91,7 @@ export function DashboardLayout() {
       const message = (event as CustomEvent<unknown>).detail;
       if (typeof message !== 'string' || !message) return;
       setSuccessToast(message);
+      setNotifications((current) => { const next = [{ id: `${Date.now()}-${Math.random()}`, message, createdAt: new Date().toISOString(), read: false }, ...current].slice(0, 20); localStorage.setItem('smartmanager-notifications', JSON.stringify(next)); return next; });
       window.clearTimeout(timer);
       timer = window.setTimeout(() => setSuccessToast(''), 4500);
     };
@@ -177,10 +182,10 @@ export function DashboardLayout() {
           >
             {darkMode ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
           </button>
-          <button className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-brand-orange-600" aria-label="Notifications">
+          <div className="relative mr-2"><button type="button" className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-orange-300 hover:bg-orange-50 hover:text-brand-orange-600" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => { const opening = !notificationsOpen; setNotificationsOpen(opening); if (opening) setNotifications((current) => { const next = current.map((item) => ({ ...item, read: true })); localStorage.setItem('smartmanager-notifications', JSON.stringify(next)); return next; }); }}>
             <Bell size={19} aria-hidden="true" />
-            <span className="absolute right-2 top-2 size-1.5 rounded-full bg-brand-orange-500" />
-          </button>
+            {notifications.some((item) => !item.read) && <span className="absolute right-1.5 top-1.5 size-2 rounded-full border-2 border-white bg-brand-orange-500" />}
+          </button>{notificationsOpen && <section className="absolute right-0 top-full z-[80] mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"><header className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><h2 className="text-sm font-bold text-slate-900">Notifications</h2><button type="button" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X size={15}/></button></header><div className="max-h-80 overflow-y-auto">{notifications.length ? notifications.map((item) => <article key={item.id} className="border-b border-slate-100 px-4 py-3 last:border-0"><div className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-500"/><div><p className="text-xs font-semibold text-slate-800">{item.message}</p><time className="mt-1 block text-[10px] text-slate-400">{new Date(item.createdAt).toLocaleString()}</time></div></div></article>) : <p className="px-4 py-8 text-center text-xs text-slate-500">No notifications yet</p>}</div></section>}</div>
         </header>
         <main className="mx-auto w-full max-w-[1700px] p-4 pb-24 sm:p-6 sm:pb-8 xl:p-8"><Outlet /></main>
       </div>
