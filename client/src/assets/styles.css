@@ -356,3 +356,55 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
+
+/* Corporate interface finishing system */
+.smartmanager-theme {
+  --ui-canvas: #f3f5f8;
+  --ui-line: #dfe5ec;
+  --ui-line-soft: #edf0f4;
+}
+.smartmanager-theme main .page-heading {
+  border-color: #e1e6ed;
+  padding-bottom: 1.15rem;
+  margin-bottom: 1.35rem;
+}
+.smartmanager-theme main .page-heading h1 {
+  font-size: clamp(1.45rem, 2vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+.smartmanager-theme main section,
+.smartmanager-theme main article,
+.smartmanager-theme main aside {
+  border-color: #e1e6ed;
+}
+.smartmanager-theme main input:not([type="checkbox"]):not([type="radio"]),
+.smartmanager-theme main select,
+.smartmanager-theme main textarea {
+  border-radius: 0.65rem;
+  box-shadow: none;
+}
+.smartmanager-theme main table thead {
+  background: #f6f8fa;
+}
+.smartmanager-theme main table th {
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.smartmanager-theme main table td {
+  border-color: #edf0f4;
+}
+.smartmanager-theme main button.rounded-xl,
+.smartmanager-theme main a.rounded-xl {
+  border-radius: 0.65rem;
+}
+.smartmanager-theme main .page-heading + section,
+.smartmanager-theme main .page-heading + div {
+  margin-top: 1.25rem;
+}
+[data-theme="dark"] .smartmanager-theme main .page-heading { border-color: var(--ui-line); }
+[data-theme="dark"] .smartmanager-theme main table thead { background: var(--ui-surface-muted); }

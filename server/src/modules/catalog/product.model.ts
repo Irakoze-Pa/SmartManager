@@ -1,6 +1,7 @@
 import { Schema, model, type InferSchemaType } from 'mongoose';
 
 export const productUnits = ['piece', 'box', 'kg', 'litre', 'metre', 'bag', 'set'] as const;
+export const inventoryRoles = ['standard', 'raw_material', 'finished_good'] as const;
 const productSchema = new Schema({
   businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
   categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
@@ -9,6 +10,7 @@ const productSchema = new Schema({
   barcode: { type: String, trim: true, maxlength: 64 },
   imageUrl: { type: String, trim: true, maxlength: 500_000, default: '' },
   unit: { type: String, enum: productUnits, required: true },
+  inventoryRole: { type: String, enum: inventoryRoles, required: true, default: 'standard' },
   costPrice: { type: Number, required: true, min: 0 },
   sellingPrice: { type: Number, required: true, min: 0 },
   packageName: { type: String, trim: true, maxlength: 40, default: '' },

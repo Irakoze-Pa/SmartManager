@@ -43,6 +43,7 @@ export const createSale: RequestHandler = async (request, response, next): Promi
     if (!user) throw new ApiError(401, 'User account is unavailable');
     if (!['owner', 'admin'].includes(user.role) && !user.branchIds.some((id) => id.toString() === branch._id.toString())) throw new ApiError(403, 'You do not have access to this branch');
     if (products.length !== productIds.length) throw new ApiError(422, 'One or more products are unavailable');
+    if (business.industry === 'manufacturing' && products.some((product) => product.inventoryRole === 'raw_material')) throw new ApiError(422, 'Raw materials cannot be sold through the finished goods checkout');
     if (parsed.data.customerId && !customer) throw new ApiError(422, 'Selected customer is unavailable');
     const productsById = new Map(products.map((product) => [product._id.toString(), product]));
     const items = itemInputs.map((input) => {
@@ -112,6 +113,28 @@ export const listSales: RequestHandler = async (request, response, next): Promis
     const sales = await SaleModel.find({ businessId: auth.businessId, ...(branchId ? { branchId } : {}) }).sort({ createdAt: -1 }).limit(50).lean();
     response.json({ items: sales.map((sale) => ({ id: sale._id.toString(), receiptNumber: sale.receiptNumber, branchId: sale.branchId.toString(), total: sale.total, amountPaid: sale.amountPaid, balanceDue: sale.balanceDue ?? 0, paymentStatus: sale.paymentStatus ?? 'paid', paymentMethod: sale.paymentMethod, initialPaymentMethod: sale.initialPaymentMethod, itemCount: sale.items.reduce((sum, item) => sum + item.quantity, 0), status: sale.status, createdAt: sale.createdAt })) });
   } catch (error: unknown) { next(error); }
+};
+
+export const salesAnalytics: RequestHandler = async (request, response, next): Promise<void> => {
+  try {
+    const auth = requireAuth(request);
+    const to = typeof request.query.to === 'string' ? new Date(`${request.query.to}T23:59:59.999`) : new Date();
+    const from = typeof request.query.from === 'string' ? new Date(`${request.query.from}T00:00:00.000`) : new Date(to.getTime() - 6 * 86_400_000);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) throw new ApiError(422, 'Sales analytics date range is invalid');
+    const user = await UserModel.findById(auth.userId).select('branchIds role').lean(); if (!user) throw new ApiError(401, 'User account is unavailable');
+    const requestedBranch = typeof request.query.branchId === 'string' ? request.query.branchId : undefined;
+    if (requestedBranch && !isValidObjectId(requestedBranch)) throw new ApiError(422, 'Sales analytics branch is invalid');
+    if (requestedBranch && !['owner', 'admin'].includes(user.role) && !user.branchIds.some((id) => id.toString() === requestedBranch)) throw new ApiError(403, 'You do not have access to this branch');
+    const branchFilter = requestedBranch ? { branchId: requestedBranch } : !['owner', 'admin'].includes(user.role) ? { branchId: { $in: user.branchIds } } : {};
+    const match = { businessId: auth.businessId, status: 'completed', createdAt: { $gte: from, $lte: to }, ...branchFilter };
+    const [days, products] = await Promise.all([
+      SaleModel.aggregate<{ date: string; revenue: number; transactions: number }>([{ $match: match }, { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$total' }, transactions: { $sum: 1 } } }, { $sort: { _id: 1 } }, { $project: { _id: 0, date: '$_id', revenue: 1, transactions: 1 } }]),
+      SaleModel.aggregate<{ productId: unknown; name: string; sku: string; quantity: number; revenue: number }>([{ $match: match }, { $unwind: '$items' }, { $group: { _id: '$items.productId', name: { $first: '$items.name' }, sku: { $first: '$items.sku' }, quantity: { $sum: '$items.quantity' }, revenue: { $sum: '$items.lineTotal' } } }, { $sort: { quantity: -1, revenue: -1 } }, { $limit: 8 }, { $project: { _id: 0, productId: '$_id', name: 1, sku: 1, quantity: 1, revenue: 1 } }]),
+    ]);
+    const dateMap = new Map(days.map((day) => [day.date, day]));
+    const daily = Array.from({ length: 7 }, (_, index) => { const date = new Date(to); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - (6 - index)); const key = date.toISOString().slice(0, 10); const result = dateMap.get(key); return { date: key, revenue: result?.revenue ?? 0, transactions: result?.transactions ?? 0 }; }).filter((day) => day.date >= from.toISOString().slice(0, 10) && day.date <= to.toISOString().slice(0, 10));
+    response.json({ from, to, daily, topProducts: products.map((product) => ({ ...product, productId: String(product.productId) })) });
+  } catch (error) { next(error); }
 };
 
 export const getSale: RequestHandler = async (request, response, next): Promise<void> => {

@@ -34,7 +34,7 @@ export function SubscriptionPage({ embedded = false }: { embedded?: boolean }) {
   const statusTone = isPastDue ? 'bg-amber-100 text-amber-800' : status === 'cancelled' ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-800';
 
   return <div className={embedded ? '' : 'mx-auto max-w-[1100px]'}>
-    {!embedded && <PageHeading eyebrow="Workspace administration" title="Billing & subscription" description="Review your SmartManager plan, access status, and renewal date." />}
+    {!embedded && <PageHeading eyebrow="Workspace administration" title="Billing & subscription" description="Subscription" />}
     {error && <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"><AlertCircle size={18} className="mt-0.5 shrink-0" />{error}</div>}
 
     <section className={`${embedded ? '' : 'mt-7'} overflow-hidden rounded-3xl bg-brand-charcoal-950 text-white shadow-xl`}>

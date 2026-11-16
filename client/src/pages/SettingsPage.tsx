@@ -19,7 +19,7 @@ export function SettingsPage() {
   ];
 
   return <div className="mx-auto max-w-[1200px]">
-    <PageHeading eyebrow="Administration" title="Settings" description="Manage your workspace, account, and SmartManager subscription in one place." />
+    <PageHeading eyebrow="Administration" title="Settings" description="Settings" />
     <div className="mt-7 grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
       <aside className="self-start rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"><p className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{<LocalizedText text="Settings" />}</p>{tabs.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={`mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${tab === id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}><Icon size={17} />{label}</button>)}</aside>
       <div className="min-w-0">

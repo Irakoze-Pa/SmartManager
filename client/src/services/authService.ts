@@ -11,6 +11,6 @@ export const login = async (input: LoginRequest): Promise<AuthResponse> =>
 export const getCurrentIdentity = async (): Promise<Identity> =>
   (await apiClient.get<Identity>('/auth/me')).data;
 
-export const updateBusinessProfile = async (input: { name: string; logoUrl: string; phone: string; email: string; address: string; tin: string; registrationNumber?: string; businessType?: 'sole_trader' | 'limited_company' | 'partnership' | 'cooperative' | 'other'; industry?: Identity['business']['industry'] }): Promise<Identity['business']> =>
+export const updateBusinessProfile = async (input: { name: string; logoUrl: string; phone: string; email: string; address: string; tin: string; registrationNumber?: string; businessType?: 'sole_trader' | 'manufacturer' | 'limited_company' | 'partnership' | 'cooperative' | 'other'; industry?: Identity['business']['industry'] }): Promise<Identity['business']> =>
   (await apiClient.patch<{ business: Identity['business'] }>('/auth/business', input)).data.business;
 

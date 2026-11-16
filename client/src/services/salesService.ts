@@ -1,6 +1,14 @@
 import type { CompletedSale, PaymentMethod, SaleSummary } from '../types/api';
 import { apiClient } from './apiClient';
 
+export interface SalesAnalytics {
+  daily: Array<{ date: string; revenue: number; transactions: number }>;
+  topProducts: Array<{ productId: string; name: string; sku: string; quantity: number; revenue: number }>;
+}
+
+export const getSalesAnalytics = async (branchId?: string): Promise<SalesAnalytics> =>
+  (await apiClient.get<SalesAnalytics>('/sales/analytics', { params: branchId ? { branchId } : undefined })).data;
+
 export const getSales = async (branchId?: string): Promise<SaleSummary[]> =>
   (await apiClient.get<{ items: SaleSummary[] }>('/sales', { params: branchId ? { branchId } : undefined })).data.items;
 

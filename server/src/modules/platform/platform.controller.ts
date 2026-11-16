@@ -17,7 +17,7 @@ const statusSchema = z.object({ status: z.enum(['active', 'suspended']) });
 const editBusinessSchema = z.object({
   name: z.string().trim().min(2).max(120),
   industry: z.enum(['retail', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']),
-  businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']),
+  businessType: z.enum(['sole_trader', 'manufacturer', 'limited_company', 'partnership', 'cooperative', 'other']),
   phone: z.string().trim().max(40).default(''),
   email: z.union([z.literal(''), z.email()]).default('').transform((value) => value.toLowerCase()),
   address: z.string().trim().max(240).default(''),

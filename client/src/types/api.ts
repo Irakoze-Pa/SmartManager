@@ -27,7 +27,7 @@ export interface RegisterRequest {
   businessAddress: string;
   tin: string;
   registrationNumber: string;
-  businessType: 'sole_trader' | 'limited_company' | 'partnership' | 'cooperative' | 'other';
+  businessType: 'sole_trader' | 'manufacturer' | 'limited_company' | 'partnership' | 'cooperative' | 'other';
   industry: BusinessIndustry;
   branchName?: string;
   firstName: string;
@@ -55,8 +55,9 @@ export interface TenantBranch { id: string; name: string; code: string; isPrimar
 export interface TenantStaff { id: string; firstName: string; lastName: string; email: string; role: UserRole; isActive: boolean; branchId: string; branchName: string }
 export type ProductUnit = 'piece' | 'box' | 'kg' | 'litre' | 'metre' | 'bag' | 'set';
 export interface Category { id: string; name: string }
-export interface Product { id: string; name: string; imageUrl?: string; sku: string; barcode?: string; categoryId: string; categoryName: string; unit: ProductUnit; costPrice: number; sellingPrice: number; packageName?: string; packageSize?: number; packageSellingPrice?: number; reorderLevel: number; isActive: boolean }
-export interface InventoryItem { branchId: string; branchName: string; productId: string; productName: string; sku: string; unit: ProductUnit; reorderLevel: number; quantity: number }
+export type InventoryRole = 'standard' | 'raw_material' | 'finished_good';
+export interface Product { id: string; name: string; imageUrl?: string; sku: string; barcode?: string; categoryId: string; categoryName: string; unit: ProductUnit; inventoryRole: InventoryRole; costPrice: number; sellingPrice: number; packageName?: string; packageSize?: number; packageSellingPrice?: number; reorderLevel: number; isActive: boolean }
+export interface InventoryItem { branchId: string; branchName: string; productId: string; productName: string; sku: string; unit: ProductUnit; inventoryRole: InventoryRole; reorderLevel: number; quantity: number; packageName?: string; packageSize?: number; packageSellingPrice?: number }
 export type PaymentMethod = 'cash' | 'mtn_momo' | 'airtel_money' | 'card' | 'bank_transfer' | 'credit' | 'mobile_money';
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 export interface SaleSummary { id: string; receiptNumber: string; branchId: string; total: number; amountPaid: number; balanceDue: number; paymentStatus: PaymentStatus; paymentMethod: PaymentMethod; initialPaymentMethod?: Exclude<PaymentMethod, 'credit'>; itemCount: number; status: 'completed' | 'voided'; createdAt: string }

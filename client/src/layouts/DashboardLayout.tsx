@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   CheckCircle2,
   FileText,
+  Factory,
   Landmark,
   ClipboardList,
   HelpCircle,
@@ -42,6 +43,7 @@ const navigation: NavigationItem[] = [
   { label: 'Overview', path: '/', icon: LayoutDashboard, available: true, group: 'Workspace' },
   { label: 'Restaurant', path: '/restaurant', icon: Utensils, available: true, group: 'Operations' },
   { label: 'Rentals', path: '/rentals', icon: Layers3, available: true, group: 'Operations' },
+  { label: 'Production', path: '/manufacturing', icon: Factory, available: true, group: 'Operations' },
   { label: 'Point of sale', path: '/pos', icon: ShoppingCart, available: true, group: 'Operations' },
   { label: 'Products', path: '/products', icon: Package, available: true, group: 'Operations' },
   { label: 'Inventory', path: '/inventory', icon: Boxes, available: true, group: 'Operations' },
@@ -74,7 +76,7 @@ export function DashboardLayout() {
   const initials = `${identity?.user.firstName.at(0) ?? ''}${identity?.user.lastName.at(0) ?? ''}`;
   const canAdminister = identity?.user.role === 'owner' || identity?.user.role === 'admin';
   const industry = identity?.business.industry ?? 'retail';
-  const sectorOperations = ['retail', 'wholesale'].includes(industry) ? ['/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : ['/customers'];
+  const sectorOperations = ['retail', 'wholesale'].includes(industry) ? ['/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'manufacturing' ? ['/manufacturing', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : ['/customers'];
   const visibleNavigation = navigation.filter((item) => (item.group !== 'Operations' || sectorOperations.includes(item.path)) && (!['/branches', '/team'].includes(item.path) || canAdminister) && (item.path !== '/purchasing' || identity?.user.role !== 'cashier') && (!['/finance', '/accounting', '/reports', '/statements'].includes(item.path) || ['owner', 'admin', 'manager'].includes(identity?.user.role ?? '')));
   const mobileNavigation = visibleNavigation.filter((item) => !['/branches', '/team'].includes(item.path)).slice(0, 3);
   const currentTitle = translate(location.pathname === '/settings' ? 'Settings' : location.pathname === '/help' ? 'Help center' : navigation.find((item) => item.path === location.pathname)?.label ?? 'SmartManager');

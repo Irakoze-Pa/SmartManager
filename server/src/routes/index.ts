@@ -15,6 +15,7 @@ import { requireDatabase } from '../middleware/requireDatabase.js';
 import { restaurantRouter } from '../modules/restaurant/restaurant.routes.js';
 import { rentalRouter } from '../modules/rentals/rental.routes.js';
 import { accountingRouter } from '../modules/accounting/accounting.routes.js';
+import { manufacturingRouter } from '../modules/manufacturing/manufacturing.routes.js';
 
 export const apiRouter = Router();
 
@@ -34,4 +35,5 @@ apiRouter.use('/subscription', subscriptionRouter);
 apiRouter.use('/restaurant', restaurantRouter);
 apiRouter.use('/rentals', rentalRouter);
 apiRouter.use('/accounting', accountingRouter);
+apiRouter.use('/manufacturing', manufacturingRouter);
 

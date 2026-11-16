@@ -6,9 +6,9 @@ import { AccountModel, AccountTransferModel, BudgetModel, ContactDocumentModel, 
 
 const auth = (request: Express.Request) => { if (!request.auth) throw new ApiError(401, 'Authentication is required'); return request.auth; };
 const defaults = [
-  ['1000','Cash and cash equivalents','asset','debit','cash'],['1100','Accounts receivable','asset','debit','accounts_receivable'],['1200','Inventory','asset','debit','inventory'],['1500','Property and equipment','asset','debit','fixed_assets'],['1590','Accumulated depreciation','asset','credit','accumulated_depreciation'],
+  ['1000','Cash and cash equivalents','asset','debit','cash'],['1100','Accounts receivable','asset','debit','accounts_receivable'],['1200','Finished goods inventory','asset','debit','inventory'],['1210','Raw materials inventory','asset','debit','raw_materials_inventory'],['1500','Property and equipment','asset','debit','fixed_assets'],['1590','Accumulated depreciation','asset','credit','accumulated_depreciation'],
   ['2000','Accounts payable','liability','credit','accounts_payable'],['2100','Tax payable','liability','credit','tax_payable'],['2200','Customer deposits','liability','credit','customer_deposits'],['3000','Owner equity','equity','credit','equity'],
-  ['4000','Sales revenue','revenue','credit','sales_revenue'],['4100','Rental revenue','revenue','credit','rental_revenue'],['5000','Cost of goods sold','expense','debit','cogs'],['6000','Operating expenses','expense','debit','operating_expense'],['6100','Depreciation expense','expense','debit','depreciation_expense'],
+  ['4000','Sales revenue','revenue','credit','sales_revenue'],['4100','Rental revenue','revenue','credit','rental_revenue'],['5000','Cost of goods sold','expense','debit','cogs'],['5100','Production quality loss','expense','debit','production_quality_loss'],['6000','Operating expenses','expense','debit','operating_expense'],['6100','Depreciation expense','expense','debit','depreciation_expense'],
 ] as const;
 const audit = (businessId: string, userId: string, action: string, entityType: string, entityId?: unknown, metadata?: unknown) => TenantAuditModel.create({ businessId, userId, action, entityType, entityId, metadata });
 

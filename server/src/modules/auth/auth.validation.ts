@@ -21,7 +21,7 @@ export const registerSchema = z.object({
   businessAddress: z.string().trim().max(240).default(''),
   tin: z.string().trim().max(40).default(''),
   registrationNumber: z.string().trim().max(60).default(''),
-  businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
+  businessType: z.enum(['sole_trader', 'manufacturer', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
   industry: industrySchema.default('retail'),
   branchName: z.preprocess(
     (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
@@ -46,7 +46,7 @@ export const businessProfileSchema = z.object({
   address: z.string().trim().max(240),
   tin: z.string().trim().max(40),
   registrationNumber: z.string().trim().max(60).default(''),
-  businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
+  businessType: z.enum(['sole_trader', 'manufacturer', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
   industry: industrySchema.default('retail'),
 });
 
