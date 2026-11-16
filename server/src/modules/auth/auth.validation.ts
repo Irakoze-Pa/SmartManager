@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const industrySchema = z.preprocess(
+  (value) => value === 'supermarket' ? 'retail' : value,
+  z.enum(['retail', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']),
+);
+
 const passwordSchema = z
   .string()
   .min(8, 'Password must contain at least 8 characters')
@@ -17,7 +22,7 @@ export const registerSchema = z.object({
   tin: z.string().trim().max(40).default(''),
   registrationNumber: z.string().trim().max(60).default(''),
   businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
-  industry: z.enum(['retail', 'supermarket', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']).default('retail'),
+  industry: industrySchema.default('retail'),
   branchName: z.preprocess(
     (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
     z.string().trim().min(2).max(100).optional(),
@@ -42,7 +47,7 @@ export const businessProfileSchema = z.object({
   tin: z.string().trim().max(40),
   registrationNumber: z.string().trim().max(60).default(''),
   businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']).default('sole_trader'),
-  industry: z.enum(['retail', 'supermarket', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']).default('retail'),
+  industry: industrySchema.default('retail'),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

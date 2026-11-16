@@ -9,7 +9,7 @@ import { UserModel, type UserRole } from '../users/user.model.js';
 import type { LoginInput, RegisterInput } from './auth.validation.js';
 
 const jwtKey = new TextEncoder().encode(env.JWT_SECRET);
-const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry ?? 'retail';
+const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry === 'supermarket' ? 'retail' : industry ?? 'retail';
 
 const createSlug = (name: string): string => {
   const base = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 45) || 'business';

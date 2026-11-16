@@ -19,6 +19,15 @@ const financialAccountSchema = new Schema({ businessId: tenant, name: { type: St
 financialAccountSchema.index({ businessId: 1, name: 1 }, { unique: true });
 export const FinancialAccountModel = model('FinancialAccount', financialAccountSchema);
 
+const reconciliationSchema = new Schema({ businessId: tenant, financialAccountId: { type: Schema.Types.ObjectId, ref: 'FinancialAccount', required: true }, statementDate: { type: Date, required: true }, statementBalance: { type: Number, required: true }, bookBalance: { type: Number, required: true }, difference: { type: Number, required: true }, note: { type: String, default: '' }, status: { type: String, enum: ['matched', 'adjustment_required'], required: true }, reconciledBy: { type: Schema.Types.ObjectId, ref: 'User', required: true } }, { timestamps: true, versionKey: false });
+reconciliationSchema.index({ businessId: 1, financialAccountId: 1, statementDate: -1 });
+export const ReconciliationModel = model('FinancialAccountReconciliation', reconciliationSchema);
+
+const accountTransferSchema = new Schema({ businessId: tenant, transferNumber: { type: String, required: true }, fromAccountId: { type: Schema.Types.ObjectId, ref: 'FinancialAccount', required: true }, toAccountId: { type: Schema.Types.ObjectId, ref: 'FinancialAccount', required: true }, amount: { type: Number, min: 0.01, required: true }, transferredAt: { type: Date, required: true }, reference: { type: String, default: '' }, note: { type: String, default: '' }, journalId: { type: Schema.Types.ObjectId, ref: 'JournalEntry', required: true }, createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true } }, { timestamps: true, versionKey: false });
+accountTransferSchema.index({ businessId: 1, transferNumber: 1 }, { unique: true });
+accountTransferSchema.index({ businessId: 1, transferredAt: -1 });
+export const AccountTransferModel = model('FinancialAccountTransfer', accountTransferSchema);
+
 const contactDocumentSchema = new Schema({ businessId: tenant, kind: { type: String, enum: ['receivable', 'payable'], required: true }, documentNumber: { type: String, required: true }, contactId: { type: Schema.Types.ObjectId, required: true }, contactName: { type: String, required: true }, issueDate: { type: Date, required: true }, dueDate: { type: Date, required: true }, subtotal: { type: Number, min: 0, required: true }, tax: { type: Number, min: 0, default: 0 }, total: { type: Number, min: 0, required: true }, amountPaid: { type: Number, min: 0, default: 0 }, status: { type: String, enum: ['draft', 'open', 'partial', 'paid', 'void'], default: 'open' }, branchId: { type: Schema.Types.ObjectId, ref: 'Branch' }, createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true } }, { timestamps: true, versionKey: false });
 contactDocumentSchema.index({ businessId: 1, kind: 1, documentNumber: 1 }, { unique: true });
 contactDocumentSchema.index({ businessId: 1, kind: 1, dueDate: 1, status: 1 });

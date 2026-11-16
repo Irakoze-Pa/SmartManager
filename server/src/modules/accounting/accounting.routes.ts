@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorizeRoles } from '../../middleware/authorizeRoles.js';
-import { bootstrap, createAccount, createAsset, createBudget, createDocument, createJournal, createTax, createTreasury, dashboard, listAccounts, listAssets, listBudgets, listDocuments, listJournals, listTaxes, listTreasury, statements, trialBalance } from './accounting.controller.js';
+import { bootstrap, createAccount, createAsset, createBudget, createDocument, createJournal, createTax, createTreasury, dashboard, listAccountTransfers, listAccounts, listAssets, listBudgets, listDocuments, listJournals, listReconciliations, listTaxes, listTreasury, reconcileTreasury, statements, transferBetweenAccounts, trialBalance } from './accounting.controller.js';
 export const accountingRouter=Router();
 accountingRouter.use(authenticate,authorizeRoles('owner','admin','manager'));
 accountingRouter.get('/dashboard',dashboard); accountingRouter.post('/bootstrap',authorizeRoles('owner','admin'),bootstrap);
@@ -9,6 +9,8 @@ accountingRouter.get('/accounts',listAccounts); accountingRouter.post('/accounts
 accountingRouter.get('/journals',listJournals); accountingRouter.post('/journals',authorizeRoles('owner','admin'),createJournal);
 accountingRouter.get('/trial-balance',trialBalance); accountingRouter.get('/statements',statements);
 accountingRouter.get('/treasury',listTreasury); accountingRouter.post('/treasury',authorizeRoles('owner','admin'),createTreasury);
+accountingRouter.get('/treasury/reconciliations',listReconciliations); accountingRouter.post('/treasury/reconcile',reconcileTreasury);
+accountingRouter.get('/treasury/transfers',listAccountTransfers); accountingRouter.post('/treasury/transfers',authorizeRoles('owner','admin'),transferBetweenAccounts);
 accountingRouter.get('/documents',listDocuments); accountingRouter.post('/documents',createDocument);
 accountingRouter.get('/budgets',listBudgets); accountingRouter.post('/budgets',authorizeRoles('owner','admin'),createBudget);
 accountingRouter.get('/assets',listAssets); accountingRouter.post('/assets',authorizeRoles('owner','admin'),createAsset);

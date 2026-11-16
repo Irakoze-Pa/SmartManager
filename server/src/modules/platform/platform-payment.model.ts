@@ -9,6 +9,7 @@ const platformPaymentSchema = new Schema(
     reference: { type: String, trim: true, maxlength: 120, default: '' },
     paidAt: { type: Date, required: true, index: true },
     plan: { type: String, enum: ['trial', 'starter', 'growth', 'enterprise'], required: true },
+    billingInterval: { type: String, enum: ['monthly', 'yearly'], required: true, default: 'monthly' },
     periodEnd: { type: Date, required: true },
     recordedBy: { type: Schema.Types.ObjectId, ref: 'PlatformAdmin', required: true },
   },

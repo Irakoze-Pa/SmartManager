@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import { hash } from 'bcryptjs';
+import mongoose, { startSession } from 'mongoose';
 import { z } from 'zod';
 import { BranchModel } from '../branches/branch.model.js';
 import { BusinessModel } from '../businesses/business.model.js';
@@ -13,12 +14,23 @@ import { registerSchema } from '../auth/auth.validation.js';
 
 const loginSchema = z.object({ email: z.email(), password: z.string().min(1) });
 const statusSchema = z.object({ status: z.enum(['active', 'suspended']) });
+const editBusinessSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  industry: z.enum(['retail', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']),
+  businessType: z.enum(['sole_trader', 'limited_company', 'partnership', 'cooperative', 'other']),
+  phone: z.string().trim().max(40).default(''),
+  email: z.union([z.literal(''), z.email()]).default('').transform((value) => value.toLowerCase()),
+  address: z.string().trim().max(240).default(''),
+  tin: z.string().trim().max(40).transform((value) => value.toUpperCase()).default(''),
+  registrationNumber: z.string().trim().max(60).transform((value) => value.toUpperCase()).default(''),
+});
 const resetPasswordSchema = z.object({
   password: z.string().min(8).max(72).regex(/[A-Z]/).regex(/[a-z]/).regex(/\d/),
 });
 const subscriptionSchema = z.object({
   plan: z.enum(['trial', 'starter', 'growth', 'enterprise']),
   status: z.enum(['trialing', 'active', 'past_due', 'cancelled']),
+  billingInterval: z.enum(['monthly', 'yearly']).default('monthly'),
   currentPeriodEnd: z.coerce.date(),
 });
 const paymentSchema = z.object({
@@ -27,9 +39,16 @@ const paymentSchema = z.object({
   reference: z.string().trim().max(120).default(''),
   paidAt: z.coerce.date(),
   plan: z.enum(['trial', 'starter', 'growth', 'enterprise']),
-  periodEnd: z.coerce.date(),
-}).refine((payment) => payment.periodEnd > payment.paidAt, { path: ['periodEnd'], message: 'Coverage date must be after the payment date' });
-const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry ?? 'retail';
+  billingInterval: z.enum(['monthly', 'yearly']).default('monthly'),
+  periodEnd: z.coerce.date().optional(),
+});
+const addBillingPeriod = (date: Date, interval: 'monthly' | 'yearly'): Date => {
+  const year = date.getUTCFullYear() + (interval === 'yearly' ? 1 : 0);
+  const month = date.getUTCMonth() + (interval === 'monthly' ? 1 : 0);
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(date.getUTCDate(), lastDay)));
+};
+const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry === 'supermarket' ? 'retail' : industry ?? 'retail';
 
 export const platformLogin: RequestHandler = async (request, response, next): Promise<void> => {
   try {
@@ -77,7 +96,7 @@ export const listBusinesses: RequestHandler = async (request, response, next): P
     const items = await Promise.all(businesses.map(async (business) => {
       const [users, branches] = await Promise.all([UserModel.countDocuments({ businessId: business._id }), BranchModel.countDocuments({ businessId: business._id })]);
       const subscription = business.subscription ?? { plan: 'trial', status: 'trialing', startedAt: business.createdAt, currentPeriodEnd: new Date(new Date(business.createdAt).getTime() + 14 * 24 * 60 * 60 * 1000) };
-      return { id: business._id.toString(), name: business.name, slug: business.slug, industry: normalizeIndustry(business.industry), businessType: business.businessType ?? 'sole_trader', status: business.status, subscription, createdAt: business.createdAt, users, branches };
+      return { id: business._id.toString(), name: business.name, slug: business.slug, industry: normalizeIndustry(business.industry), businessType: business.businessType ?? 'sole_trader', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '', registrationNumber: business.registrationNumber ?? '', status: business.status, subscription, createdAt: business.createdAt, users, branches };
     }));
     response.json({ items, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
   } catch (error: unknown) { next(error); }
@@ -95,17 +114,65 @@ export const setBusinessStatus: RequestHandler = async (request, response, next)
   } catch (error: unknown) { next(error); }
 };
 
+export const updatePlatformBusiness: RequestHandler = async (request, response, next): Promise<void> => {
+  try {
+    if (!request.platformAuth) throw new ApiError(401, 'Platform authentication is required');
+    const parsed = editBusinessSchema.safeParse(request.body);
+    if (!parsed.success) throw new ApiError(422, 'Business details are invalid', parsed.error.flatten().fieldErrors);
+    const business = await BusinessModel.findById(request.params.businessId);
+    if (!business) throw new ApiError(404, 'Business was not found');
+    Object.assign(business, parsed.data);
+    await business.save();
+    await PlatformAuditModel.create({ adminId: request.platformAuth.adminId, action: 'business.updated', targetType: 'business', targetId: business.id, metadata: parsed.data });
+    response.json({ business: { id: business.id, name: business.name, industry: normalizeIndustry(business.industry), businessType: business.businessType, phone: business.phone, email: business.email, address: business.address, tin: business.tin, registrationNumber: business.registrationNumber } });
+  } catch (error: unknown) { next(error); }
+};
+
+export const deletePlatformBusiness: RequestHandler = async (request, response, next): Promise<void> => {
+  try {
+    if (!request.platformAuth) throw new ApiError(401, 'Platform authentication is required');
+    const business = await BusinessModel.findById(request.params.businessId).select('name');
+    if (!business) throw new ApiError(404, 'Business was not found');
+
+    const session = await startSession();
+    const deletedByCollection: Record<string, number> = {};
+    try {
+      await session.withTransaction(async () => {
+        for (const [name, collection] of Object.entries(mongoose.connection.collections)) {
+          if (collection === BusinessModel.collection || collection === PlatformAuditModel.collection) continue;
+          const result = await collection.deleteMany({ businessId: business._id }, { session });
+          if (result.deletedCount) deletedByCollection[name] = result.deletedCount;
+        }
+        const removedBusiness = await BusinessModel.deleteOne({ _id: business._id }, { session });
+        if (!removedBusiness.deletedCount) throw new ApiError(404, 'Business was not found');
+        await PlatformAuditModel.create([{
+          adminId: request.platformAuth!.adminId,
+          action: 'business.deleted',
+          targetType: 'business',
+          targetId: business.id,
+          metadata: { name: business.name, deletedByCollection },
+        }], { session });
+      });
+    } finally {
+      await session.endSession();
+    }
+    response.json({ business: { id: business.id, name: business.name }, deletedRecords: deletedByCollection });
+  } catch (error: unknown) { next(error); }
+};
+
 export const setBusinessSubscription: RequestHandler = async (request, response, next): Promise<void> => {
   try {
     if (!request.platformAuth) throw new ApiError(401, 'Platform authentication is required');
     const parsed = subscriptionSchema.safeParse(request.body);
     if (!parsed.success) throw new ApiError(422, 'Subscription details are invalid');
+    const status = parsed.data.plan === 'trial' ? 'trialing' : parsed.data.status === 'trialing' ? 'active' : parsed.data.status;
+    const subscription = { ...parsed.data, status };
     const existing = await BusinessModel.findById(request.params.businessId).select('createdAt subscription');
     if (!existing) throw new ApiError(404, 'Business was not found');
     const startedAt = existing.subscription?.startedAt ?? existing.createdAt;
-    const business = await BusinessModel.findByIdAndUpdate(existing._id, { subscription: { ...parsed.data, startedAt } }, { new: true });
+    const business = await BusinessModel.findByIdAndUpdate(existing._id, { subscription: { ...subscription, startedAt } }, { new: true });
     if (!business) throw new ApiError(404, 'Business was not found');
-    await PlatformAuditModel.create({ adminId: request.platformAuth.adminId, action: 'business.subscription.updated', targetType: 'business', targetId: business.id, metadata: parsed.data });
+    await PlatformAuditModel.create({ adminId: request.platformAuth.adminId, action: 'business.subscription.updated', targetType: 'business', targetId: business.id, metadata: subscription });
     response.json({ business: { id: business.id, subscription: business.subscription } });
   } catch (error: unknown) { next(error); }
 };
@@ -128,7 +195,7 @@ export const listPlatformPayments: RequestHandler = async (request, response, ne
     response.json({ items: records.map((payment) => {
       const business = payment.businessId as unknown as { _id: unknown; name: string; slug: string };
       const admin = payment.recordedBy as unknown as { name: string };
-      return { id: String(payment._id), businessId: String(business._id), businessName: business.name, businessSlug: business.slug, amount: payment.amount, currency: payment.currency, method: payment.method, reference: payment.reference, paidAt: payment.paidAt, plan: payment.plan, periodEnd: payment.periodEnd, recordedByName: admin.name };
+      return { id: String(payment._id), businessId: String(business._id), businessName: business.name, businessSlug: business.slug, amount: payment.amount, currency: payment.currency, method: payment.method, reference: payment.reference, paidAt: payment.paidAt, plan: payment.plan, billingInterval: payment.billingInterval ?? 'monthly', periodEnd: payment.periodEnd, recordedByName: admin.name };
     }), pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
   } catch (error: unknown) { next(error); }
 };
@@ -138,20 +205,29 @@ export const recordPlatformPayment: RequestHandler = async (request, response, n
     if (!request.platformAuth) throw new ApiError(401, 'Platform authentication is required');
     const parsed = paymentSchema.safeParse(request.body);
     if (!parsed.success) throw new ApiError(422, 'Payment details are invalid', parsed.error.flatten().fieldErrors);
+    if (parsed.data.plan === 'trial') throw new ApiError(422, 'A payment cannot activate the trial plan');
+    if (parsed.data.paidAt.getTime() > Date.now() + 5 * 60_000) throw new ApiError(422, 'Payment date cannot be in the future');
     const existing = await BusinessModel.findById(request.params.businessId).select('name createdAt subscription');
     if (!existing) throw new ApiError(404, 'Business was not found');
-    const payment = await PlatformPaymentModel.create({ businessId: existing._id, ...parsed.data, currency: 'RWF', recordedBy: request.platformAuth.adminId });
+    const priorPeriodEnd = existing.subscription?.currentPeriodEnd;
+    const renewsEarly = existing.subscription?.status === 'active' && priorPeriodEnd && priorPeriodEnd > parsed.data.paidAt;
+    const periodStart = renewsEarly ? priorPeriodEnd : parsed.data.paidAt;
+    const periodEnd = addBillingPeriod(periodStart, parsed.data.billingInterval);
+    if (parsed.data.periodEnd && parsed.data.periodEnd.getTime() !== periodEnd.getTime()) {
+      throw new ApiError(422, 'Coverage date must match the selected billing period');
+    }
+    const payment = await PlatformPaymentModel.create({ businessId: existing._id, ...parsed.data, periodEnd, currency: 'RWF', recordedBy: request.platformAuth.adminId });
     try {
-      const business = await BusinessModel.findByIdAndUpdate(existing._id, { $set: { 'subscription.plan': parsed.data.plan, 'subscription.status': 'active', 'subscription.startedAt': existing.subscription?.startedAt ?? parsed.data.paidAt, 'subscription.currentPeriodEnd': parsed.data.periodEnd } }, { new: true });
+      const business = await BusinessModel.findByIdAndUpdate(existing._id, { $set: { 'subscription.plan': parsed.data.plan, 'subscription.status': 'active', 'subscription.billingInterval': parsed.data.billingInterval, 'subscription.startedAt': existing.subscription?.startedAt ?? parsed.data.paidAt, 'subscription.currentPeriodEnd': periodEnd } }, { new: true });
       if (!business) throw new ApiError(404, 'Business was not found');
-      await PlatformAuditModel.create({ adminId: request.platformAuth.adminId, action: 'payment.recorded', targetType: 'business', targetId: existing.id, metadata: { paymentId: payment.id, amount: payment.amount, currency: payment.currency, method: payment.method, reference: payment.reference, plan: payment.plan, periodEnd: payment.periodEnd } });
+      await PlatformAuditModel.create({ adminId: request.platformAuth.adminId, action: 'payment.recorded', targetType: 'business', targetId: existing.id, metadata: { paymentId: payment.id, amount: payment.amount, currency: payment.currency, method: payment.method, reference: payment.reference, plan: payment.plan, billingInterval: payment.billingInterval, periodEnd: payment.periodEnd } });
     } catch (error: unknown) {
       await PlatformPaymentModel.deleteOne({ _id: payment._id });
       if (existing.subscription) await BusinessModel.findByIdAndUpdate(existing._id, { $set: { subscription: existing.subscription } });
       else await BusinessModel.findByIdAndUpdate(existing._id, { $unset: { subscription: 1 } });
       throw error;
     }
-    response.status(201).json({ payment: { id: payment.id, businessId: existing.id, businessName: existing.name, amount: payment.amount, currency: payment.currency, method: payment.method, reference: payment.reference, paidAt: payment.paidAt, plan: payment.plan, periodEnd: payment.periodEnd } });
+    response.status(201).json({ payment: { id: payment.id, businessId: existing.id, businessName: existing.name, amount: payment.amount, currency: payment.currency, method: payment.method, reference: payment.reference, paidAt: payment.paidAt, plan: payment.plan, billingInterval: payment.billingInterval, periodEnd: payment.periodEnd } });
   } catch (error: unknown) { next(error); }
 };
 
@@ -189,7 +265,7 @@ export const platformSummary: RequestHandler = async (_request, response, next):
   try {
     const [businesses, activeBusinesses, users, branches, sectors, plans, attentionBusinesses, trialBusinesses, paymentTotals] = await Promise.all([
       BusinessModel.countDocuments(), BusinessModel.countDocuments({ status: 'active' }), UserModel.countDocuments(), BranchModel.countDocuments(),
-      BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $cond: [{ $eq: ['$industry', 'clinic'] }, 'building_materials', { $ifNull: ['$industry', 'retail'] }] }, count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+      BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $switch: { branches: [{ case: { $eq: ['$industry', 'clinic'] }, then: 'building_materials' }, { case: { $eq: ['$industry', 'supermarket'] }, then: 'retail' }], default: { $ifNull: ['$industry', 'retail'] } } }, count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
       BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $ifNull: ['$subscription.plan', 'trial'] }, count: { $sum: 1 } } }]),
       BusinessModel.countDocuments({ $or: [{ status: 'suspended' }, { 'subscription.status': { $in: ['past_due', 'cancelled'] } }] }),
       BusinessModel.countDocuments({ $or: [{ 'subscription.status': 'trialing' }, { subscription: { $exists: false } }] }),

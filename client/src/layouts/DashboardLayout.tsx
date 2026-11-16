@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   BarChart3,
   Bell,
   Boxes,
   Building2,
   CircleDollarSign,
+  CheckCircle2,
   FileText,
   Landmark,
   ClipboardList,
@@ -64,6 +65,7 @@ const kinyarwandaNavigation: Record<string, string> = {
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [successToast, setSuccessToast] = useState('');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('smartmanager-theme') === 'dark');
   const location = useLocation();
   const { identity, logout } = useAuth();
@@ -72,10 +74,23 @@ export function DashboardLayout() {
   const initials = `${identity?.user.firstName.at(0) ?? ''}${identity?.user.lastName.at(0) ?? ''}`;
   const canAdminister = identity?.user.role === 'owner' || identity?.user.role === 'admin';
   const industry = identity?.business.industry ?? 'retail';
-  const sectorOperations = ['retail', 'supermarket'].includes(industry) ? ['/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : ['/customers'];
+  const sectorOperations = ['retail', 'wholesale'].includes(industry) ? ['/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : ['/customers'];
   const visibleNavigation = navigation.filter((item) => (item.group !== 'Operations' || sectorOperations.includes(item.path)) && (!['/branches', '/team'].includes(item.path) || canAdminister) && (item.path !== '/purchasing' || identity?.user.role !== 'cashier') && (!['/finance', '/accounting', '/reports', '/statements'].includes(item.path) || ['owner', 'admin', 'manager'].includes(identity?.user.role ?? '')));
   const mobileNavigation = visibleNavigation.filter((item) => !['/branches', '/team'].includes(item.path)).slice(0, 3);
   const currentTitle = translate(location.pathname === '/settings' ? 'Settings' : location.pathname === '/help' ? 'Help center' : navigation.find((item) => item.path === location.pathname)?.label ?? 'SmartManager');
+
+  useEffect(() => {
+    let timer = 0;
+    const showToast = (event: Event) => {
+      const message = (event as CustomEvent<unknown>).detail;
+      if (typeof message !== 'string' || !message) return;
+      setSuccessToast(message);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setSuccessToast(''), 4500);
+    };
+    window.addEventListener('smartshop:success', showToast);
+    return () => { window.removeEventListener('smartshop:success', showToast); window.clearTimeout(timer); };
+  }, []);
 
   const toggleTheme = () => setDarkMode((current) => {
     const next = !current;
@@ -168,6 +183,7 @@ export function DashboardLayout() {
         <main className="mx-auto w-full max-w-[1700px] p-4 pb-24 sm:p-6 sm:pb-8 xl:p-8"><Outlet /></main>
       </div>
       <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-[0_16px_40px_-20px_rgba(15,23,42,0.45)] backdrop-blur-xl lg:hidden" aria-label={language === 'rw' ? 'Ibikubiyemo' : 'Mobile navigation'}>{mobileNavigation.map(({ label, path, icon: Icon }) => <NavLink key={path} to={path} className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold transition ${isActive ? 'bg-brand-orange-500 text-white shadow-md shadow-orange-900/20' : 'text-slate-500'}`}><Icon size={18} /><span className="truncate">{translate(label)}</span></NavLink>)}<NavLink to="/settings" className={({ isActive }) => `flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-bold transition ${isActive ? 'bg-brand-orange-500 text-white shadow-md shadow-orange-900/20' : 'text-slate-500'}`}><Settings size={18} /><span>{translate('Settings')}</span></NavLink></nav>
+      {successToast && <div role="status" aria-live="polite" className="fixed right-4 top-20 z-[70] flex w-[min(440px,calc(100vw-2rem))] items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 text-sm text-emerald-900 shadow-xl"><CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={19}/><p className="flex-1 font-semibold">{successToast}</p><button type="button" onClick={() => setSuccessToast('')} aria-label="Dismiss success message" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X size={16}/></button></div>}
     </div>
   );
 }

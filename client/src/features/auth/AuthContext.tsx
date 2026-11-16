@@ -54,7 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.localStorage.removeItem(tokenKey);
     setIdentity(null);
   }, []);
-  const refreshIdentity = useCallback(async () => { setIdentity(await getCurrentIdentity()); }, []);
+  const refreshIdentity = useCallback(async () => {
+    const freshIdentity = await getCurrentIdentity();
+    setIdentity(freshIdentity);
+    window.dispatchEvent(new Event('smartshop:workspace-updated'));
+  }, []);
 
   const value = useMemo(() => ({ identity, isLoading, login, logout, refreshIdentity }), [identity, isLoading, login, logout, refreshIdentity]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

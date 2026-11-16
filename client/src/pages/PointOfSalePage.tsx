@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../services/apiClient';
 import { getProducts } from '../services/catalogService';
 import { getInventory, getInventoryBranches } from '../services/inventoryService';
 import { createSale, getSale, getSales } from '../services/salesService';
+import { notifySuccess } from '../utils/notifications';
 import { getCustomers } from '../services/customerService';
 import { useLanguage } from '../features/language/LanguageContext';
 import type { CompletedSale, Customer, InventoryItem, PaymentMethod, Product, SaleSummary, TenantBranch } from '../types/api';
@@ -91,7 +92,7 @@ export function PointOfSalePage() {
     try {
       const paid = paymentMethod === 'cash' || paymentMethod === 'credit' ? Number(amountPaid) : saleTotal;
       const sale = await createSale({ branchId, items: cart.map((line) => ({ productId: line.item.productId, quantity: line.quantity, saleUnit: line.saleUnit, unitPrice: line.unitPrice })), paymentMethod, amountPaid: paid, ...(paymentMethod === 'credit' ? { depositMethod } : {}), ...(customerId ? { customerId } : {}) });
-      setCart([]); await loadBranch(branchId, false); setCompleted(sale); setAmountPaid(''); setCustomerId('');
+      setCart([]); await loadBranch(branchId, false); setCompleted(sale); setAmountPaid(''); setCustomerId(''); notifySuccess(`Sale ${sale.receiptNumber} completed.`);
       setDocument({ sale, kind: 'receipt' });
     } catch (requestError) { setError(getApiErrorMessage(requestError, 'The sale could not be completed.')); }
     finally { setBusy(false); }

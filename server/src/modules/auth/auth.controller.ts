@@ -36,7 +36,7 @@ export const updateBusinessProfile: RequestHandler = async (request, response, n
     if (!parsed.success) throw new ApiError(422, 'Business profile is invalid', parsed.error.flatten().fieldErrors);
     const business = await BusinessModel.findByIdAndUpdate(request.auth.businessId, parsed.data, { new: true });
     if (!business) throw new ApiError(404, 'Business was not found');
-    response.json({ business: { id: business.id, name: business.name, slug: business.slug, logoUrl: business.logoUrl ?? '', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '', registrationNumber: business.registrationNumber ?? '', businessType: business.businessType ?? 'sole_trader', industry: business.industry === 'clinic' ? 'building_materials' : business.industry ?? 'retail' } });
+    response.json({ business: { id: business.id, name: business.name, slug: business.slug, logoUrl: business.logoUrl ?? '', phone: business.phone ?? '', email: business.email ?? '', address: business.address ?? '', tin: business.tin ?? '', registrationNumber: business.registrationNumber ?? '', businessType: business.businessType ?? 'sole_trader', industry: business.industry === 'clinic' ? 'building_materials' : business.industry === 'supermarket' ? 'retail' : business.industry ?? 'retail' } });
   } catch (error: unknown) { next(error); }
 };
 
