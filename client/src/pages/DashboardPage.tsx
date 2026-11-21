@@ -17,7 +17,7 @@ const healthCopy: Record<ApiHealthState, { label: string; className: string }> =
   offline: { label: 'API unavailable', className: 'bg-rose-50 text-rose-700' },
 };
 
-function RetailDashboard({ wholesale = false }: { wholesale?: boolean }) {
+function RetailDashboard({ wholesale = false, supermarket = false }: { wholesale?: boolean; supermarket?: boolean }) {
   const { identity } = useAuth();
   const health = useApiHealth();
   const [branches, setBranches] = useState<TenantBranch[]>([]);
@@ -59,13 +59,13 @@ function RetailDashboard({ wholesale = false }: { wholesale?: boolean }) {
   const metrics = [
     { label: "Today's revenue", value: todayRevenue.toLocaleString(), meta: `${todaySales.length} sales`, icon: TrendingUp, tone: 'bg-emerald-50 text-emerald-700' },
     { label: 'Average transaction', value: averageSale.toLocaleString(undefined, { maximumFractionDigits: 0 }), meta: 'RWF today', icon: ReceiptText, tone: 'bg-orange-50 text-brand-orange-600' },
-    { label: wholesale ? 'Units available' : 'Units in stock', value: totalUnits.toLocaleString(), meta: `${productCount} active products`, icon: Package, tone: 'bg-blue-50 text-blue-700' },
-    { label: 'Low-stock products', value: lowStockItems.length.toLocaleString(), meta: lowStockItems.length ? 'Action required' : 'No alerts', icon: AlertTriangle, tone: lowStockItems.length ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600' },
+    { label: wholesale ? 'Units available' : supermarket ? 'Units on hand' : 'Units in stock', value: totalUnits.toLocaleString(), meta: `${productCount} active products`, icon: Package, tone: 'bg-blue-50 text-blue-700' },
+    { label: supermarket ? 'Replenishment alerts' : 'Low-stock products', value: lowStockItems.length.toLocaleString(), meta: lowStockItems.length ? 'Action required' : 'No alerts', icon: AlertTriangle, tone: lowStockItems.length ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600' },
   ];
   const retailActions = [
     { title: 'New sale', path: '/pos', icon: ShoppingCart, tone: 'bg-orange-50 text-orange-700' },
     { title: 'Purchasing', path: '/purchasing', icon: Boxes, tone: 'bg-blue-50 text-blue-700' },
-    { title: 'Inventory', path: '/inventory', icon: ClipboardList, tone: 'bg-amber-50 text-amber-700' },
+    { title: 'Products & pricing', path: '/products', icon: Package, tone: 'bg-amber-50 text-amber-700' },
     { title: 'Reports', path: '/reports', icon: BarChart3, tone: 'bg-emerald-50 text-emerald-700' },
   ];
   const wholesaleActions = [
@@ -74,10 +74,17 @@ function RetailDashboard({ wholesale = false }: { wholesale?: boolean }) {
     { title: 'Products & pricing', path: '/products', icon: Package, tone: 'bg-amber-50 text-amber-700' },
     { title: 'Customers', path: '/customers', icon: ClipboardList, tone: 'bg-emerald-50 text-emerald-700' },
   ];
-  const operations = wholesale ? wholesaleActions : retailActions;
+  const supermarketActions = [
+    { title: 'Checkout', path: '/pos', icon: ShoppingCart, tone: 'bg-orange-50 text-orange-700' },
+    { title: 'Replenish stock', path: '/purchasing', icon: Boxes, tone: 'bg-blue-50 text-blue-700' },
+    { title: 'Stock count & waste', path: '/inventory', icon: ClipboardList, tone: 'bg-amber-50 text-amber-700' },
+    { title: 'Sales & performance', path: '/reports', icon: BarChart3, tone: 'bg-emerald-50 text-emerald-700' },
+    { title: 'Customers', path: '/customers', icon: ClipboardList, tone: 'bg-violet-50 text-violet-700' },
+  ];
+  const operations = wholesale ? wholesaleActions : supermarket ? supermarketActions : retailActions;
 
   return <div className="mx-auto max-w-[1500px] space-y-5">
-    <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-5 px-5 py-6 sm:px-7"><div className="flex min-w-0 items-center gap-4"><span className="grid size-12 shrink-0 place-items-center rounded-xl bg-slate-900 text-white"><ShoppingCart size={21}/></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500"><span className="truncate">{identity?.business.name}</span><span className="text-slate-300">/</span><span>{locationLabel}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${healthCopy[health].className}`}>{healthCopy[health].label}</span></div><h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">{wholesale ? 'Wholesale overview' : 'Retail overview'}</h1><p className="mt-1 text-xs text-slate-500">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p></div></div><Link to="/pos" className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-800"><ShoppingCart size={16} />{wholesale ? 'New bulk sale' : 'New sale'}<ArrowRight size={15} /></Link></div></header>
+    <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-5 px-5 py-6 sm:px-7"><div className="flex min-w-0 items-center gap-4"><span className="grid size-12 shrink-0 place-items-center rounded-xl bg-slate-900 text-white"><ShoppingCart size={21}/></span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500"><span className="truncate">{identity?.business.name}</span><span className="text-slate-300">/</span><span>{locationLabel}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${healthCopy[health].className}`}>{healthCopy[health].label}</span></div><h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">{wholesale ? 'Wholesale overview' : supermarket ? 'Supermarket command center' : 'Retail overview'}</h1><p className="mt-1 text-xs text-slate-500">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p></div></div><Link to="/pos" className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-800"><ShoppingCart size={16} />{wholesale ? 'New bulk sale' : 'New sale'}<ArrowRight size={15} /></Link></div></header>
     {error && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{error}</div>}
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map(({ label, value, meta, icon: Icon, tone }) => <article key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</p><p className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950">{loading ? '—' : value}</p></div><span className={`grid size-10 place-items-center rounded-xl ${tone}`}><Icon size={19} /></span></div><p className="mt-2 text-xs font-medium text-slate-500">{meta}</p></article>)}</section>
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Workspace</p><h2 className="mt-1 font-bold text-slate-950">Quick access</h2></div></div><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{operations.filter(({path})=>(path!=='/reports'||canSeeFinance)&&(path!=='/purchasing'||identity?.user.role!=='cashier')).map(({title,path,icon:Icon,tone})=><Link key={path} to={path} className="group flex items-center gap-3 rounded-xl border border-slate-200 p-3.5 transition hover:border-slate-300 hover:bg-slate-50"><span className={`grid size-10 shrink-0 place-items-center rounded-lg ${tone}`}><Icon size={17}/></span><span className="flex-1 text-sm font-bold text-slate-800">{title}</span><ArrowRight size={15} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-700"/></Link>)}</div></section>
@@ -92,5 +99,5 @@ function RetailDashboard({ wholesale = false }: { wholesale?: boolean }) {
 export function DashboardPage() {
   const { identity } = useAuth();
   if (!identity) return null;
-  return ['retail', 'wholesale'].includes(identity.business.industry) ? <RetailDashboard wholesale={identity.business.industry === 'wholesale'} /> : <IndustryDashboard identity={identity} />;
+  return ['retail', 'supermarket', 'wholesale'].includes(identity.business.industry) ? <RetailDashboard wholesale={identity.business.industry === 'wholesale'} supermarket={identity.business.industry === 'supermarket'} /> : <IndustryDashboard identity={identity} />;
 }

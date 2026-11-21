@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorizeRoles } from '../../middleware/authorizeRoles.js';
-import { cancelPurchaseOrder, createPurchaseOrder, createSupplier, getSupplierStatement, listPurchaseOrders, listSuppliers, receivePurchaseOrder, recordSupplierPayment, setSupplierStatus } from './purchasing.controller.js';
+import { cancelPurchaseOrder, createPurchaseOrder, createSupplier, getSupplierStatement, listPurchaseOrders, listSuppliers, receivePurchaseOrder, recordSupplierPayment, setSupplierStatus, updateSupplier } from './purchasing.controller.js';
 
 export const purchasingRouter = Router();
 purchasingRouter.use(authenticate, authorizeRoles('owner', 'admin', 'manager', 'inventory'));
 purchasingRouter.get('/suppliers', listSuppliers);
 purchasingRouter.get('/suppliers/:supplierId/statement', getSupplierStatement);
 purchasingRouter.post('/suppliers', createSupplier);
+purchasingRouter.patch('/suppliers/:supplierId', updateSupplier);
 purchasingRouter.patch('/suppliers/:supplierId/status', setSupplierStatus);
 purchasingRouter.get('/orders', listPurchaseOrders);
 purchasingRouter.post('/orders', createPurchaseOrder);

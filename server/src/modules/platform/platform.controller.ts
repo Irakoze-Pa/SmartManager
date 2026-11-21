@@ -16,7 +16,7 @@ const loginSchema = z.object({ email: z.email(), password: z.string().min(1) });
 const statusSchema = z.object({ status: z.enum(['active', 'suspended']) });
 const editBusinessSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  industry: z.enum(['retail', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']),
+  industry: z.enum(['retail', 'supermarket', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']),
   businessType: z.enum(['sole_trader', 'manufacturer', 'limited_company', 'partnership', 'cooperative', 'other']),
   phone: z.string().trim().max(40).default(''),
   email: z.union([z.literal(''), z.email()]).default('').transform((value) => value.toLowerCase()),
@@ -48,7 +48,7 @@ const addBillingPeriod = (date: Date, interval: 'monthly' | 'yearly'): Date => {
   const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   return new Date(Date.UTC(year, month, Math.min(date.getUTCDate(), lastDay)));
 };
-const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry === 'supermarket' ? 'retail' : industry ?? 'retail';
+const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry ?? 'retail';
 
 export const platformLogin: RequestHandler = async (request, response, next): Promise<void> => {
   try {
@@ -265,7 +265,7 @@ export const platformSummary: RequestHandler = async (_request, response, next):
   try {
     const [businesses, activeBusinesses, users, branches, sectors, plans, attentionBusinesses, trialBusinesses, paymentTotals] = await Promise.all([
       BusinessModel.countDocuments(), BusinessModel.countDocuments({ status: 'active' }), UserModel.countDocuments(), BranchModel.countDocuments(),
-      BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $switch: { branches: [{ case: { $eq: ['$industry', 'clinic'] }, then: 'building_materials' }, { case: { $eq: ['$industry', 'supermarket'] }, then: 'retail' }], default: { $ifNull: ['$industry', 'retail'] } } }, count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+      BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $switch: { branches: [{ case: { $eq: ['$industry', 'clinic'] }, then: 'building_materials' }, ], default: { $ifNull: ['$industry', 'retail'] } } }, count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
       BusinessModel.aggregate<{ _id: string; count: number }>([{ $group: { _id: { $ifNull: ['$subscription.plan', 'trial'] }, count: { $sum: 1 } } }]),
       BusinessModel.countDocuments({ $or: [{ status: 'suspended' }, { 'subscription.status': { $in: ['past_due', 'cancelled'] } }] }),
       BusinessModel.countDocuments({ $or: [{ 'subscription.status': 'trialing' }, { subscription: { $exists: false } }] }),

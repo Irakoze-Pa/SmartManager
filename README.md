@@ -1,6 +1,6 @@
 # SmartShop Pro
 
-SmartShop Pro is a multi-tenant SaaS foundation for retail and trade businesses. Phase 1 established the platform; Phase 2 added tenant identity and administration; later phases added catalog, inventory, transactional point-of-sale checkout, purchasing, finance summaries, reporting, and subscription visibility. Full double-entry accounting, automated billing, and offline synchronization are intentionally not implemented yet.
+SmartShop Pro is a multi-tenant SaaS foundation for supermarkets, retail, wholesale, and trade businesses. Phase 1 established the platform; Phase 2 added tenant identity and administration; later phases added catalog, inventory, transactional point-of-sale checkout, purchasing, finance summaries, reporting, and subscription visibility. Full double-entry accounting, automated billing, and offline synchronization are intentionally not implemented yet.
 
 ## Project structure
 
@@ -95,6 +95,7 @@ npm run build
 - The server is a modular monolith. Each future business domain belongs in `server/src/modules/<domain>` with its own model, service, controller, validator, and routes.
 - Tenant-owned records must carry a business identifier, and every query must be scoped by the authenticated business. The Phase 2 identity layer supplies this context before business data modules are introduced.
 - Phase 2 authentication verifies a signed bearer token and attaches `userId`, `businessId`, and `role` to protected requests. Future modules must still scope every query explicitly with `businessId`.
+- Tenant authentication rechecks the business's active state on every request; non-admin staff operations are scoped to their assigned branches where branch data is involved.
 - Owner registration creates the business, primary branch, and first owner account. Team invitations and permission enforcement are not implemented yet.
 - The client uses a centralized Axios instance and Orange · Charcoal · Soft White design tokens. The API URL and visual palette are not scattered through feature code.
 - The future offline POS should be implemented behind a synchronization boundary rather than coupling local storage directly to API components.
@@ -129,7 +130,8 @@ npm run build
 - `POST /api/inventory/adjustments` — audited stock quantity adjustment
 - Supermarket inventory supports counted-quantity adjustments and reason-coded expired or damaged goods write-offs through the same audited endpoint
 - `GET/POST /api/inventory/transfers` — list or complete atomic branch stock transfers
-- `GET/POST /api/purchasing/suppliers` — list or create tenant suppliers
+- `GET/POST /api/purchasing/suppliers` — list or create tenant suppliers, including optional tax identification number (TIN)
+- `PATCH /api/purchasing/suppliers/:supplierId` — update supplier contact details and TIN
 - `PATCH /api/purchasing/suppliers/:supplierId/status` — activate or deactivate a supplier
 - `GET/POST /api/purchasing/orders` — list or create purchase orders
 - `POST /api/purchasing/orders/:purchaseOrderId/receive` — receive an order into branch inventory
@@ -161,7 +163,7 @@ Then visit `http://localhost:5173/platform/login`. Do not add these credentials 
 
 ## Current status
 
-Implemented: platform and tenant identity, retail and wholesale/distribution sector setup, platform oversight, manual platform-recorded subscription payment register, tenant branches and staff, role-gated administration, tenant-scoped categories and products with barcode lookup and base/package unit conversion, customers and linked purchase history, suppliers, purchase orders, per-branch stock balances and transfers, retail stock counts and reason-coded waste adjustments, non-negative inventory enforcement, transactionally recorded stock receipts and adjustments, Atlas-transactional point-of-sale checkout, expense tracking, period-based profit summaries, business reporting, and platform-managed subscription state.
+Implemented: platform and tenant identity, supermarket, retail, and wholesale/distribution sector setup, platform oversight, manual platform-recorded subscription payment register, tenant branches and staff, role-gated administration, tenant-scoped categories and products with barcode lookup and base/package unit conversion, customers and linked purchase history, suppliers with TIN records, purchase orders, per-branch stock balances and transfers, retail stock counts and reason-coded waste adjustments, non-negative inventory enforcement, transactionally recorded stock receipts and adjustments, Atlas-transactional point-of-sale checkout, expense tracking, period-based profit summaries, business reporting, and platform-managed subscription state.
 
 Not implemented by design: MFA, email delivery/invitations, self-service password recovery, forced temporary-password changes, refresh-token rotation, custom permission policies, partial purchase-order receipts, automated payment-gateway billing, full double-entry accounting, and offline POS.
 

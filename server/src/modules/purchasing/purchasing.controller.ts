@@ -14,6 +14,7 @@ import { SupplierModel } from './supplier.model.js';
 const supplierInput = z.object({
   name: z.string().trim().min(2).max(140),
   contactName: z.string().trim().max(120).default(''),
+  tin: z.string().trim().max(32).default(''),
   phone: z.string().trim().max(40).default(''),
   email: z.union([z.literal(''), z.email()]).default(''),
 });
@@ -39,7 +40,7 @@ const accessibleBranches = async (tenant: ReturnType<typeof auth>): Promise<stri
 export const listSuppliers: RequestHandler = async (request, response, next) => { try {
   const tenant = auth(request);
   const suppliers = await SupplierModel.find({ businessId: tenant.businessId }).sort({ name: 1 }).lean();
-  response.json({ items: suppliers.map((item) => ({ id: item._id.toString(), name: item.name, contactName: item.contactName, phone: item.phone, email: item.email, isActive: item.isActive })) });
+  response.json({ items: suppliers.map((item) => ({ id: item._id.toString(), name: item.name, contactName: item.contactName, tin: item.tin ?? '', phone: item.phone, email: item.email, isActive: item.isActive })) });
 } catch (error) { next(error); } };
 
 export const getSupplierStatement: RequestHandler = async (request, response, next) => { try {
@@ -52,14 +53,24 @@ export const getSupplierStatement: RequestHandler = async (request, response, ne
     const paid = (order.supplierPayments ?? []).reduce((sum, payment) => sum + payment.amount, 0);
     return { id: order._id.toString(), date: order.createdAt, reference: order.orderNumber, status: order.status, total: order.total, paid, balance: order.status === 'received' ? Math.max(0, roundMoney(order.total - paid)) : 0, payments: (order.supplierPayments ?? []).map((payment) => ({ amount: payment.amount, method: payment.method, reference: payment.reference, date: payment.paidAt })) };
   });
-  response.json({ statement: { supplier: { id: supplier._id.toString(), name: supplier.name, phone: supplier.phone, email: supplier.email }, totalOrders: orders.filter((order) => order.status === 'received').reduce((sum, order) => sum + order.total, 0), totalPaid: orders.reduce((sum, order) => sum + (order.supplierPayments ?? []).reduce((paid, payment) => paid + payment.amount, 0), 0), balanceDue: transactions.reduce((sum, transaction) => sum + transaction.balance, 0), transactions } });
+  response.json({ statement: { supplier: { id: supplier._id.toString(), name: supplier.name, phone: supplier.phone, email: supplier.email, tin: supplier.tin ?? '' }, totalOrders: orders.filter((order) => order.status === 'received').reduce((sum, order) => sum + order.total, 0), totalPaid: orders.reduce((sum, order) => sum + (order.supplierPayments ?? []).reduce((paid, payment) => paid + payment.amount, 0), 0), balanceDue: transactions.reduce((sum, transaction) => sum + transaction.balance, 0), transactions } });
 } catch (error) { next(error); } };
 
 export const createSupplier: RequestHandler = async (request, response, next) => { try {
   const tenant = auth(request); const parsed = supplierInput.safeParse(request.body);
   if (!parsed.success) throw new ApiError(422, 'Supplier details are invalid', parsed.error.flatten().fieldErrors);
   const supplier = await SupplierModel.create({ businessId: tenant.businessId, ...parsed.data });
-  response.status(201).json({ supplier: { id: supplier.id, name: supplier.name, contactName: supplier.contactName, phone: supplier.phone, email: supplier.email, isActive: supplier.isActive } });
+  response.status(201).json({ supplier: { id: supplier.id, name: supplier.name, contactName: supplier.contactName, tin: supplier.tin, phone: supplier.phone, email: supplier.email, isActive: supplier.isActive } });
+} catch (error) { next(error); } };
+
+export const updateSupplier: RequestHandler = async (request, response, next) => { try {
+  const tenant = auth(request); const parsed = supplierInput.safeParse(request.body);
+  if (!parsed.success || !isValidObjectId(request.params.supplierId)) throw new ApiError(422, 'Supplier details are invalid', parsed.success ? undefined : parsed.error.flatten().fieldErrors);
+  const existing = await SupplierModel.find({ businessId: tenant.businessId, _id: { $ne: request.params.supplierId } }).select('name').lean();
+  if (existing.some((item) => item.name.toLowerCase() === parsed.data.name.toLowerCase())) throw new ApiError(409, 'A supplier with this name already exists');
+  const supplier = await SupplierModel.findOneAndUpdate({ _id: request.params.supplierId, businessId: tenant.businessId }, { $set: parsed.data }, { new: true });
+  if (!supplier) throw new ApiError(404, 'Supplier was not found');
+  response.json({ supplier: { id: supplier.id, name: supplier.name, contactName: supplier.contactName, tin: supplier.tin, phone: supplier.phone, email: supplier.email, isActive: supplier.isActive } });
 } catch (error) { next(error); } };
 
 export const setSupplierStatus: RequestHandler = async (request, response, next) => { try {

@@ -9,7 +9,7 @@ import { UserModel, type UserRole } from '../users/user.model.js';
 import type { LoginInput, RegisterInput } from './auth.validation.js';
 
 const jwtKey = new TextEncoder().encode(env.JWT_SECRET);
-const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry === 'supermarket' ? 'retail' : industry ?? 'retail';
+const normalizeIndustry = (industry?: string): string => industry === 'clinic' ? 'building_materials' : industry ?? 'retail';
 
 const createSlug = (name: string): string => {
   const base = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 45) || 'business';
@@ -42,11 +42,17 @@ export const registerBusiness = async (input: RegisterInput): Promise<Authentica
   const slug = createSlug(input.businessName);
 
   try {
-    const [business, branch, user] = await Promise.all([
+    const [businessResult, branchResult, userResult] = await Promise.allSettled([
       BusinessModel.create({ _id: businessId, name: input.businessName, slug, logoUrl: input.logoUrl, phone: input.businessPhone, email: input.businessEmail, address: input.businessAddress, tin: input.tin, registrationNumber: input.registrationNumber, businessType: input.businessType, industry: input.industry, subscription: { plan: 'trial', status: 'trialing', startedAt: new Date(), currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) } }),
       BranchModel.create({ _id: branchId, businessId, name: input.branchName ?? input.businessName, code: 'MAIN', isPrimary: true }),
       UserModel.create({ _id: userId, businessId, defaultBranchId: branchId, branchIds: [branchId], firstName: input.firstName, lastName: input.lastName, email: input.email, passwordHash, role: 'owner' }),
     ]);
+    if (businessResult.status === 'rejected') throw businessResult.reason;
+    if (branchResult.status === 'rejected') throw branchResult.reason;
+    if (userResult.status === 'rejected') throw userResult.reason;
+    const business = businessResult.value;
+    const branch = branchResult.value;
+    const user = userResult.value;
 
     return {
       token: await signToken(user.id, business.id, user.role),

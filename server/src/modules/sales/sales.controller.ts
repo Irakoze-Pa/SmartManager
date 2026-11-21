@@ -22,6 +22,7 @@ const saleSchema = z.object({
 });
 const roundMoney = (value: number): number => Math.round((value + Number.EPSILON) * 100) / 100;
 const requireAuth = (request: Express.Request) => { if (!request.auth) throw new ApiError(401, 'Authentication is required'); return request.auth; };
+const accessibleBranchIds = async (tenant: ReturnType<typeof requireAuth>) => { if (tenant.role === 'owner' || tenant.role === 'admin') return undefined; const user = await UserModel.findById(tenant.userId).select('branchIds').lean(); if (!user) throw new ApiError(401, 'User account is unavailable'); return user.branchIds; };
 
 export const createSale: RequestHandler = async (request, response, next): Promise<void> => {
   try {
@@ -110,7 +111,10 @@ export const listSales: RequestHandler = async (request, response, next): Promis
   try {
     const auth = requireAuth(request);
     const branchId = typeof request.query.branchId === 'string' ? request.query.branchId : undefined;
-    const sales = await SaleModel.find({ businessId: auth.businessId, ...(branchId ? { branchId } : {}) }).sort({ createdAt: -1 }).limit(50).lean();
+    if (branchId && !isValidObjectId(branchId)) throw new ApiError(422, 'Sales branch is invalid');
+    const allowed = await accessibleBranchIds(auth);
+    if (branchId && allowed && !allowed.some((id) => id.toString() === branchId)) throw new ApiError(403, 'You do not have access to this branch');
+    const sales = await SaleModel.find({ businessId: auth.businessId, ...(branchId ? { branchId } : allowed ? { branchId: { $in: allowed } } : {}) }).sort({ createdAt: -1 }).limit(50).lean();
     response.json({ items: sales.map((sale) => ({ id: sale._id.toString(), receiptNumber: sale.receiptNumber, branchId: sale.branchId.toString(), total: sale.total, amountPaid: sale.amountPaid, balanceDue: sale.balanceDue ?? 0, paymentStatus: sale.paymentStatus ?? 'paid', paymentMethod: sale.paymentMethod, initialPaymentMethod: sale.initialPaymentMethod, itemCount: sale.items.reduce((sum, item) => sum + item.quantity, 0), status: sale.status, createdAt: sale.createdAt })) });
   } catch (error: unknown) { next(error); }
 };
@@ -147,7 +151,8 @@ export const getSale: RequestHandler = async (request, response, next): Promise<
   try {
     const auth = requireAuth(request);
     if (!isValidObjectId(request.params.saleId)) throw new ApiError(422, 'Sale is invalid');
-    const sale = await SaleModel.findOne({ _id: request.params.saleId, businessId: auth.businessId }).lean();
+    const allowed = await accessibleBranchIds(auth);
+    const sale = await SaleModel.findOne({ _id: request.params.saleId, businessId: auth.businessId, ...(allowed ? { branchId: { $in: allowed } } : {}) }).lean();
     if (!sale) throw new ApiError(404, 'Sale was not found');
     const [business, branch, cashier] = await Promise.all([
       BusinessModel.findById(auth.businessId).lean(),

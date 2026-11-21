@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 import type { BusinessIndustry, PlatformBusiness } from '../types/api';
 
 const sectors: Array<[BusinessIndustry, string]> = [
-  ['retail', 'Retail & Shops'], ['wholesale', 'Wholesale & Distribution'], ['manufacturing', 'Manufacturing'],
-  ['real_estate', 'Real Estate'], ['restaurant', 'Restaurants & Bars'], ['building_materials', 'Building Materials & Rentals'],
+  ['supermarket', 'Supermarket & Grocery'], ['retail', 'Retail & Shops'], ['wholesale', 'Wholesale & Distribution'], ['manufacturing', 'Manufacturing'],
+  ['real_estate', 'Real Estate'], ['restaurant', 'Restaurants & Bars'],
   ['logistics', 'Transport & Logistics'], ['school', 'Schools'], ['construction', 'Construction'],
 ];
 
@@ -19,7 +19,7 @@ export function PlatformBusinessEditForm({ business, busy, onClose, onSubmit }: 
       <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-orange-600">Business profile</p><h2 id="edit-business-title" className="mt-1 text-xl font-extrabold text-slate-950">Edit business</h2><p className="mt-1 text-sm text-slate-500">Update contact, registration, and sector details for {business.name}.</p></div><button type="button" onClick={onClose} aria-label="Close edit form" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X size={18}/></button></header>
       <div className="grid gap-4 p-6 sm:grid-cols-2">
         <Field name="name" label="Business name" required defaultValue={business.name}/>
-        <label className="block text-sm font-semibold text-slate-700">Business sector<select name="industry" defaultValue={business.industry} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal">{sectors.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label className="block text-sm font-semibold text-slate-700">Business sector<select name="industry" defaultValue={business.industry} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal">{business.industry === 'building_materials' && <option value="building_materials">Legacy rental workspace</option>}{sectors.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label className="block text-sm font-semibold text-slate-700">Legal structure<select name="businessType" defaultValue={business.businessType} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal"><option value="sole_trader">Sole trader</option><option value="manufacturer">Manufacturer</option><option value="limited_company">Limited company</option><option value="partnership">Partnership</option><option value="cooperative">Cooperative</option><option value="other">Other</option></select></label>
         <Field name="phone" label="Business phone" type="tel" defaultValue={business.phone ?? ''}/>
         <Field name="email" label="Business email" type="email" defaultValue={business.email ?? ''}/>

@@ -20,6 +20,7 @@ import {
   Settings,
   ShoppingCart,
   Sun,
+  Truck,
   Utensils,
   Users,
   X,
@@ -58,6 +59,7 @@ const navigation: NavigationItem[] = [
   { label: 'Products', path: '/products', icon: Package, available: true, group: 'Operations' },
   { label: 'Inventory', path: '/inventory', icon: Boxes, available: true, group: 'Operations' },
   { label: 'Purchasing', path: '/purchasing', icon: ClipboardList, available: true, group: 'Operations' },
+  { label: 'Suppliers', path: '/suppliers', icon: Truck, available: true, group: 'Operations' },
   { label: 'Customers', path: '/customers', icon: Users, available: true, group: 'Operations' },
   { label: 'Finance & accounting', path: '/finance', icon: CircleDollarSign, available: true, group: 'Insights' },
   { label: 'Statements', path: '/statements', icon: FileText, available: true, group: 'Insights' },
@@ -69,7 +71,7 @@ const navigation: NavigationItem[] = [
 
 const kinyarwandaNavigation: Record<string, string> = {
   Overview: 'Incamake', Restaurant: 'Resitora', Rentals: 'Ubukode', 'Point of sale': 'Ahishyurirwa',
-  Products: 'Ibicuruzwa', Inventory: 'Ububiko', Purchasing: 'Amasoko', Customers: 'Abakiriya',
+  Products: 'Ibicuruzwa', Inventory: 'Ububiko', Purchasing: 'Amasoko', Suppliers: 'Abatanga ibicuruzwa', Customers: 'Abakiriya',
   'Finance & accounting': 'Imari n’ibaruramari', Statements: 'Inyandiko z’imari', 'Accounting center': 'Ibaruramari',
   Reports: 'Raporo', Branches: 'Amashami', 'Team access': 'Abakozi', 'Help center': 'Ubufasha', Settings: 'Igenamiterere',
   Workspace: 'Ahakorerwa', Operations: 'Imirimo', Insights: 'Isesengura', Administration: 'Imiyoborere',
@@ -89,8 +91,8 @@ export function DashboardLayout() {
   const initials = `${identity?.user.firstName.at(0) ?? ''}${identity?.user.lastName.at(0) ?? ''}`;
   const canAdminister = identity?.user.role === 'owner' || identity?.user.role === 'admin';
   const industry = identity?.business.industry ?? 'retail';
-  const sectorOperations = ['retail', 'wholesale'].includes(industry) ? ['/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'manufacturing' ? ['/manufacturing', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/customers'] : ['/customers'];
-  const visibleNavigation = navigation.filter((item) => (item.group !== 'Operations' || sectorOperations.includes(item.path)) && (!['/branches', '/team'].includes(item.path) || canAdminister) && (item.path !== '/purchasing' || identity?.user.role !== 'cashier') && (!['/finance', '/accounting', '/reports', '/statements'].includes(item.path) || ['owner', 'admin', 'manager'].includes(identity?.user.role ?? '')));
+  const sectorOperations = ['retail', 'wholesale', 'supermarket'].includes(industry) ? ['/pos', '/products', '/inventory', '/purchasing', '/suppliers', '/customers'] : industry === 'manufacturing' ? ['/manufacturing', '/pos', '/products', '/inventory', '/purchasing', '/suppliers', '/customers'] : industry === 'building_materials' ? ['/rentals', '/inventory', '/purchasing', '/suppliers', '/customers'] : industry === 'restaurant' ? ['/restaurant', '/pos', '/products', '/inventory', '/purchasing', '/suppliers', '/customers'] : ['/customers'];
+  const visibleNavigation = navigation.filter((item) => (item.group !== 'Operations' || sectorOperations.includes(item.path)) && (!['/branches', '/team'].includes(item.path) || canAdminister) && (!['/purchasing', '/suppliers'].includes(item.path) || identity?.user.role !== 'cashier') && (!['/finance', '/accounting', '/reports', '/statements'].includes(item.path) || ['owner', 'admin', 'manager'].includes(identity?.user.role ?? '')));
   const mobileNavigation = visibleNavigation.filter((item) => !['/branches', '/team'].includes(item.path)).slice(0, 3);
   const currentTitle = translate(location.pathname === '/settings' ? 'Settings' : location.pathname === '/help' ? 'Help center' : navigation.find((item) => item.path === location.pathname)?.label ?? 'SmartManager');
 

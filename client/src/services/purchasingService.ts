@@ -4,8 +4,11 @@ import { apiClient } from './apiClient';
 export const getSuppliers = async (): Promise<Supplier[]> =>
   (await apiClient.get<{ items: Supplier[] }>('/purchasing/suppliers')).data.items;
 
-export const createSupplier = async (input: { name: string; contactName: string; phone: string; email: string }): Promise<Supplier> =>
+export const createSupplier = async (input: { name: string; contactName: string; tin: string; phone: string; email: string }): Promise<Supplier> =>
   (await apiClient.post<{ supplier: Supplier }>('/purchasing/suppliers', input)).data.supplier;
+
+export const updateSupplier = async (id: string, input: { name: string; contactName: string; tin: string; phone: string; email: string }): Promise<Supplier> =>
+  (await apiClient.patch<{ supplier: Supplier }>(`/purchasing/suppliers/${id}`, input)).data.supplier;
 
 export const setSupplierStatus = async (id: string, isActive: boolean): Promise<void> => {
   await apiClient.patch(`/purchasing/suppliers/${id}/status`, { isActive });
