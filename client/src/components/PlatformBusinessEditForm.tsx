@@ -5,6 +5,7 @@ import type { BusinessIndustry, PlatformBusiness } from '../types/api';
 const sectors: Array<[BusinessIndustry, string]> = [
   ['supermarket', 'Supermarket & Grocery'], ['retail', 'Retail & Shops'], ['wholesale', 'Wholesale & Distribution'], ['manufacturing', 'Manufacturing'],
   ['real_estate', 'Real Estate'], ['restaurant', 'Restaurants & Bars'],
+  ['dry_cleaning', 'Dry Cleaning'],
   ['logistics', 'Transport & Logistics'], ['school', 'Schools'], ['construction', 'Construction'],
 ];
 

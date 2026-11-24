@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { ApiError } from '../../utils/ApiError.js';
 import { SaleModel } from '../sales/sale.model.js';
 import { CustomerModel } from './customer.model.js';
+import { BusinessModel } from '../businesses/business.model.js';
+import { DryCleaningOrderModel } from '../dry-cleaning/dry-cleaning.model.js';
 
 const customerInput = z.object({ name: z.string().trim().min(2).max(140), customerType: z.enum(['individual', 'company']).default('individual'), companyName: z.string().trim().max(160).default(''), companyRegistrationNumber: z.string().trim().max(80).default(''), companyTin: z.string().trim().max(80).default(''), phone: z.string().trim().max(40).default(''), email: z.union([z.literal(''), z.email()]).default(''), notes: z.string().trim().max(500).default('') }).refine((data) => data.customerType !== 'company' || data.companyName.length >= 2, { path: ['companyName'], message: 'Company name is required for company customers' });
 const creditPaymentInput = z.object({ amount: z.coerce.number().positive().max(1_000_000_000), method: z.enum(['cash', 'mtn_momo', 'airtel_money', 'card', 'bank_transfer']) });
@@ -83,6 +85,13 @@ export const getCustomerStatement: RequestHandler = async (request, response, ne
   if (!isValidObjectId(request.params.customerId)) throw new ApiError(422, 'Customer is invalid');
   const customer = await CustomerModel.findOne({ _id: request.params.customerId, businessId: tenant.businessId }).lean();
   if (!customer) throw new ApiError(404, 'Customer was not found');
+  const business = await BusinessModel.findById(tenant.businessId).select('industry').lean();
+  if (business?.industry === 'dry_cleaning') {
+    const orders = await DryCleaningOrderModel.find({ businessId: tenant.businessId, customerId: customer._id, status: { $ne: 'cancelled' } }).sort({ createdAt: -1 }).lean();
+    const transactions = orders.map((order) => ({ id: order._id.toString(), date: order.createdAt, reference: order.orderNumber, type: 'service_order', status: order.status, total: order.total, paid: order.amountPaid, balance: Math.max(0, order.total - order.amountPaid), items: order.items.map((item) => ({ garment: item.garment, service: item.service, quantity: item.quantity })), payments: (order.payments ?? []).map((payment) => ({ amount: payment.amount, method: payment.method, date: payment.recordedAt })) }));
+    response.json({ statement: { customer: { id: customer._id.toString(), name: customer.customerType === 'company' ? customer.companyName : customer.name, phone: customer.phone, email: customer.email }, totalSales: orders.reduce((sum, order) => sum + order.total, 0), totalPaid: orders.reduce((sum, order) => sum + order.amountPaid, 0), balanceDue: transactions.reduce((sum, transaction) => sum + transaction.balance, 0), transactions } });
+    return;
+  }
   const sales = await SaleModel.find({ businessId: tenant.businessId, customerId: customer._id, status: 'completed' }).sort({ createdAt: -1 }).lean();
   const transactions = sales.map((sale) => {
     const creditPayments = (sale.creditPayments ?? []).map((payment) => ({ amount: payment.amount, method: payment.method, date: payment.receivedAt }));

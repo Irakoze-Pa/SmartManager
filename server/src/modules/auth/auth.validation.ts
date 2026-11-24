@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const industrySchema = z.enum(['retail', 'supermarket', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'building_materials', 'logistics', 'school', 'construction']);
+const industrySchema = z.enum(['retail', 'supermarket', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'dry_cleaning', 'building_materials', 'logistics', 'school', 'construction']);
 
 const passwordSchema = z
   .string()

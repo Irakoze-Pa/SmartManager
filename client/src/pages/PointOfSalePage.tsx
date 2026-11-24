@@ -22,7 +22,7 @@ const saleCopy = {
 
 const paymentLabels: Record<PaymentMethod, string> = {
   cash: 'Cash', mtn_momo: 'MTN MoMo', airtel_money: 'Airtel Money', card: 'Bank card',
-  bank_transfer: 'Bank transfer', credit: 'Customer credit', mobile_money: 'Mobile money',
+  bank_transfer: 'Bank transfer', credit: 'Customer credit', mobile_money: 'Mobile money', other: 'Other',
 };
 const money = (value: number) => `${value.toLocaleString()} RWF`;
 

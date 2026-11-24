@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { ApiError } from '../../utils/ApiError.js';
 import { BranchModel } from '../branches/branch.model.js';
 import { SaleModel } from '../sales/sale.model.js';
+import { BusinessModel } from '../businesses/business.model.js';
+import { DryCleaningOrderModel } from '../dry-cleaning/dry-cleaning.model.js';
 import { UserModel } from '../users/user.model.js';
 import { ExpenseModel, expenseCategories } from './expense.model.js';
 
@@ -29,18 +31,24 @@ const period = (request: Request) => { const now = new Date(); const fallback = 
 export const financeSummary: RequestHandler = async (request, response, next) => { try {
   const tenant = auth(request); const { from, to } = period(request); const requestedBranch = typeof request.query.branchId === 'string' ? request.query.branchId : undefined; const branchIds = await branchScope(tenant, requestedBranch);
   const businessId = new Types.ObjectId(tenant.businessId); const branchFilter = branchIds ? { branchId: branchIds.length === 1 ? new Types.ObjectId(branchIds[0]) : { $in: branchIds.map((id) => new Types.ObjectId(id)) } } : {};
-  const [sales] = await SaleModel.aggregate<{ revenue: number; cogs: number; transactions: number }>([
-    { $match: { businessId, status: 'completed', createdAt: { $gte: from, $lte: to }, ...branchFilter } },
-    { $group: {
-      _id: null,
-      revenue: { $sum: '$total' },
-      cogs: { $sum: { $sum: { $map: { input: '$items', as: 'item', in: { $multiply: [{ $ifNull: ['$$item.stockQuantity', '$$item.quantity'] }, { $ifNull: ['$$item.unitCost', 0] }] } } } } },
-      transactions: { $sum: 1 },
-    } },
-  ]);
+  const business = await BusinessModel.findById(businessId).select('industry').lean();
+  const sales = business?.industry === 'dry_cleaning'
+    ? (await DryCleaningOrderModel.aggregate<{ revenue: number; transactions: number }>([
+      { $match: { businessId, status: 'picked_up', ...branchFilter, $expr: { $and: [{ $gte: [{ $ifNull: ['$pickedUpAt', '$updatedAt'] }, from] }, { $lte: [{ $ifNull: ['$pickedUpAt', '$updatedAt'] }, to] }] } } },
+      { $group: { _id: null, revenue: { $sum: '$total' }, transactions: { $sum: 1 } } },
+    ]))[0]
+    : (await SaleModel.aggregate<{ revenue: number; cogs: number; transactions: number }>([
+      { $match: { businessId, status: 'completed', createdAt: { $gte: from, $lte: to }, ...branchFilter } },
+      { $group: {
+        _id: null,
+        revenue: { $sum: '$total' },
+        cogs: { $sum: { $sum: { $map: { input: '$items', as: 'item', in: { $multiply: [{ $ifNull: ['$$item.stockQuantity', '$$item.quantity'] }, { $ifNull: ['$$item.unitCost', 0] }] } } } } },
+        transactions: { $sum: 1 },
+      } },
+    ]))[0];
   const [expenses] = await ExpenseModel.aggregate<{ total: number }>([{ $match: { businessId, incurredAt: { $gte: from, $lte: to }, ...branchFilter } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
-  const revenue = sales?.revenue ?? 0; const cogs = sales?.cogs ?? 0; const operatingExpenses = expenses?.total ?? 0; const grossProfit = revenue - cogs;
-  response.json({ from, to, revenue, cogs, grossProfit, operatingExpenses, netProfit: grossProfit - operatingExpenses, transactions: sales?.transactions ?? 0 });
+  const revenue = sales?.revenue ?? 0; const cogs = business?.industry === 'dry_cleaning' ? 0 : sales && 'cogs' in sales ? Number(sales.cogs) : 0; const operatingExpenses = expenses?.total ?? 0; const grossProfit = revenue - cogs;
+  response.json({ from, to, industry: business?.industry ?? 'retail', revenue, cogs, grossProfit, operatingExpenses, netProfit: grossProfit - operatingExpenses, transactions: sales?.transactions ?? 0 });
 } catch (error) { next(error); } };
 
 export const listExpenses: RequestHandler = async (request, response, next) => { try {

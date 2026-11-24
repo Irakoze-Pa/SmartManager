@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Printer, X } from 'lucide-react';
 import type { CompletedSale, PaymentMethod } from '../types/api';
 
-const labels: Record<PaymentMethod, string> = { cash: 'Cash', mtn_momo: 'MTN MoMo', airtel_money: 'Airtel Money', card: 'Bank card', bank_transfer: 'Bank transfer', credit: 'Customer credit', mobile_money: 'Mobile money' };
+const labels: Record<PaymentMethod, string> = { cash: 'Cash', mtn_momo: 'MTN MoMo', airtel_money: 'Airtel Money', card: 'Bank card', bank_transfer: 'Bank transfer', credit: 'Customer credit', mobile_money: 'Mobile money', other: 'Other' };
 const money = (value: number) => `${value.toLocaleString()} RWF`;
 
 export function SaleDocument({ sale, kind, onClose, autoPrint = false }: { sale: CompletedSale; kind: 'receipt' | 'invoice'; onClose: () => void; autoPrint?: boolean }) {

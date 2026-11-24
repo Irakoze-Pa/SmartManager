@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { authenticate } from '../../middleware/authenticate.js';
+import { authorizeRoles } from '../../middleware/authorizeRoles.js';
+import { createOrder, listOrders, overview, updateOrder } from './dry-cleaning.controller.js';
+export const dryCleaningRouter = Router();
+dryCleaningRouter.use(authenticate, authorizeRoles('owner','admin','manager','cashier'));
+dryCleaningRouter.get('/overview', overview);
+dryCleaningRouter.get('/orders', listOrders);
+dryCleaningRouter.post('/orders', createOrder);
+dryCleaningRouter.patch('/orders/:orderId', updateOrder);

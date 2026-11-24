@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorizeRoles } from '../../middleware/authorizeRoles.js';
+import { BusinessModel } from '../businesses/business.model.js';
+import { syncDryCleaningAccounting } from '../dry-cleaning/dry-cleaning.accounting.js';
 import { bootstrap, createAccount, createAsset, createBudget, createDocument, createJournal, createTax, createTreasury, dashboard, listAccountTransfers, listAccounts, listAssets, listBudgets, listDocuments, listJournals, listReconciliations, listTaxes, listTreasury, reconcileTreasury, statements, transferBetweenAccounts, trialBalance } from './accounting.controller.js';
 export const accountingRouter=Router();
 accountingRouter.use(authenticate,authorizeRoles('owner','admin','manager'));
+accountingRouter.use(async(req,_res,next)=>{try{if(!req.auth)return next();const business=await BusinessModel.findById(req.auth.businessId).select('industry').lean();if(business?.industry==='dry_cleaning')await syncDryCleaningAccounting(req.auth.businessId,req.auth.userId);next();}catch(error){next(error);}});
 accountingRouter.get('/dashboard',dashboard); accountingRouter.post('/bootstrap',authorizeRoles('owner','admin'),bootstrap);
 accountingRouter.get('/accounts',listAccounts); accountingRouter.post('/accounts',authorizeRoles('owner','admin'),createAccount);
 accountingRouter.get('/journals',listJournals); accountingRouter.post('/journals',authorizeRoles('owner','admin'),createJournal);

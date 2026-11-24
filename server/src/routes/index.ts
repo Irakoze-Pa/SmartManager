@@ -16,6 +16,7 @@ import { restaurantRouter } from '../modules/restaurant/restaurant.routes.js';
 import { rentalRouter } from '../modules/rentals/rental.routes.js';
 import { accountingRouter } from '../modules/accounting/accounting.routes.js';
 import { manufacturingRouter } from '../modules/manufacturing/manufacturing.routes.js';
+import { dryCleaningRouter } from '../modules/dry-cleaning/dry-cleaning.routes.js';
 
 export const apiRouter = Router();
 
@@ -36,4 +37,5 @@ apiRouter.use('/restaurant', restaurantRouter);
 apiRouter.use('/rentals', rentalRouter);
 apiRouter.use('/accounting', accountingRouter);
 apiRouter.use('/manufacturing', manufacturingRouter);
+apiRouter.use('/dry-cleaning', dryCleaningRouter);
 
