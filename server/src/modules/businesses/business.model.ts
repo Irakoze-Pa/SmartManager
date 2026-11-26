@@ -12,7 +12,7 @@ const businessSchema = new Schema(
     tin: { type: String, trim: true, uppercase: true, maxlength: 40, default: '' },
     registrationNumber: { type: String, trim: true, uppercase: true, maxlength: 60, default: '' },
     businessType: { type: String, enum: ['sole_trader', 'manufacturer', 'limited_company', 'partnership', 'cooperative', 'other'], default: 'sole_trader' },
-    industry: { type: String, enum: ['retail', 'supermarket', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'dry_cleaning', 'building_materials', 'clinic', 'logistics', 'school', 'construction'], default: 'retail', required: true },
+    industry: { type: String, enum: ['retail', 'supermarket', 'wholesale', 'manufacturing', 'real_estate', 'restaurant', 'dry_cleaning', 'building_materials', 'equipment_hire', 'clinic', 'logistics', 'school', 'construction'], default: 'retail', required: true },
     subscription: {
       plan: { type: String, enum: ['trial', 'starter', 'growth', 'enterprise'], default: 'trial', required: true },
       status: { type: String, enum: ['trialing', 'active', 'past_due', 'cancelled'], default: 'trialing', required: true },

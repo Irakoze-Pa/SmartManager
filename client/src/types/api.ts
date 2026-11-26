@@ -35,7 +35,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
 }
-export type BusinessIndustry = 'retail' | 'supermarket' | 'wholesale' | 'manufacturing' | 'real_estate' | 'restaurant' | 'dry_cleaning' | 'building_materials' | 'logistics' | 'school' | 'construction';
+export type BusinessIndustry = 'retail' | 'supermarket' | 'wholesale' | 'manufacturing' | 'real_estate' | 'restaurant' | 'dry_cleaning' | 'building_materials' | 'equipment_hire' | 'logistics' | 'school' | 'construction';
 
 export interface LoginRequest {
   email: string;

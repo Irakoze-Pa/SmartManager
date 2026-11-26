@@ -1,11 +1,12 @@
 import { useLanguage } from '../features/language/LanguageContext';
 import { useState, type FormEvent } from 'react';
-import { Building2, Factory, GraduationCap, Hammer, ImagePlus, ShoppingCart, Store, Truck, Utensils, X, Shirt } from 'lucide-react';
+import { Building2, Factory, GraduationCap, Hammer, ImagePlus, ShoppingCart, Store, Truck, Utensils, X, Shirt, Layers3 } from 'lucide-react';
 
 const sectors = [
   ['supermarket', 'Supermarket & Grocery', Store], ['retail', 'Retail & Shops', ShoppingCart], ['wholesale', 'Wholesale & Distribution', Truck], ['manufacturing', 'Manufacturing', Factory],
   ['real_estate', 'Real Estate', Building2], ['restaurant', 'Restaurants & Bars', Utensils],
   ['dry_cleaning', 'Dry Cleaning', Shirt],
+  ['equipment_hire', 'General Rentals (clothes, event items, tools, etc.)', Layers3],
   ['logistics', 'Transport & Logistics', Truck],
   ['school', 'Schools', GraduationCap], ['construction', 'Construction', Hammer],
 ] as const;

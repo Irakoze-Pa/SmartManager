@@ -218,17 +218,56 @@
 .smartmanager-theme textarea::placeholder { color: #94a3b8; }
 .smartmanager-theme table tbody tr:hover { background: #f8fafc; }
 
-/* Rentals intentionally use a focused dark work surface inside the light shell. */
+/* Rental management follows the light admin workspace and keeps form controls consistent. */
 .rental-workspace input,
 .rental-workspace select,
-.rental-workspace textarea {
-  border-color: #3f3f46;
-  background: #101010;
-  color: #fff;
-}
+.rental-workspace textarea { border-color: #e2e8f0; background: #fff; color: #172033; }
 .rental-workspace input::placeholder,
-.rental-workspace textarea::placeholder { color: #71717a; }
-.rental-workspace table tbody tr:hover { background: #1d1d1d; }
+.rental-workspace textarea::placeholder { color: #94a3b8; }
+.rental-workspace table tbody tr:hover { background: #f8fafc; }
+.rental-workspace {
+  --rental-font: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+  font-family: var(--rental-font);
+  letter-spacing: -0.008em;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+}
+.rental-workspace :is(h1, h2, h3) { letter-spacing: -0.025em; }
+.rental-workspace :is(button, input, select, textarea) { font-family: var(--rental-font); }
+.rental-workspace :is([data-rental-metric], [data-rental-amount]) { font-variant-numeric: tabular-nums; }
+.rental-workspace { max-width: 1480px; margin-inline: auto; }
+.rental-workspace .page-heading { border: 0; border-radius: 20px; background: linear-gradient(115deg, #172033 0%, #26364e 72%, #334866 100%); padding: 22px 24px; color: #fff; box-shadow: 0 12px 28px rgb(15 23 42 / 12%); }
+.rental-workspace .page-heading h1 { color: #fff; font-size: clamp(1.35rem, 2vw, 1.8rem); }
+.rental-workspace .page-heading p:last-child { color: #cbd5e1; }
+.rental-workspace .page-heading p:first-child { color: #fdba74; }
+.rental-workspace nav[aria-label] { scrollbar-width: none; }
+.rental-workspace nav[aria-label]::-webkit-scrollbar { display: none; }
+.rental-workspace article,
+.rental-workspace section { scroll-margin-top: 1rem; }
+.rental-workspace :is(a, button, select, input) { -webkit-tap-highlight-color: transparent; }
+@media (max-width: 640px) {
+  .rental-workspace { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .rental-workspace .page-heading { align-items: flex-start; border-radius: 16px; padding: 17px; }
+  .rental-workspace .page-heading > div:last-child { width: 100%; }
+  .rental-workspace .page-heading > div:last-child > div { display: grid; grid-template-columns: 1fr; }
+  .rental-workspace .page-heading > div:last-child a { justify-content: center; min-height: 42px; padding-block: 10px; }
+  .rental-workspace nav { flex-wrap: nowrap; overflow-x: auto; }
+  .rental-workspace nav a { flex: 0 0 auto; padding-inline: 12px; }
+  .rental-workspace nav + p { margin-top: .55rem; }
+  .rental-workspace [class*="grid-cols-4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rental-workspace [class*="min-w-[900px]"] { min-width: 0; }
+  .rental-workspace :is(input, select, textarea) { font-size: 16px; }
+  .rental-workspace select { min-height: 44px; }
+  .rental-workspace :is(button, a) { touch-action: manipulation; }
+  .rental-workspace main, .rental-workspace form { min-width: 0; }
+  .rental-workspace [class*="rounded-2xl"][class*="border"] { border-radius: 14px; }
+  .rental-workspace form { padding: 14px; }
+  .rental-workspace form label { min-width: 0; }
+  .rental-workspace .rental-mobile-actions { position: sticky; bottom: 0; z-index: 10; margin-inline: -14px; padding: 12px 14px max(12px, env(safe-area-inset-bottom)); background: rgb(255 255 255 / 96%); border-top: 1px solid #e2e8f0; backdrop-filter: blur(12px); }
+  .rental-workspace .rental-mobile-actions > button { flex: 1; justify-content: center; }
+  .rental-workspace table { font-size: 12px; }
+  .rental-workspace .overflow-x-auto { overscroll-behavior-inline: contain; }
+  .rental-workspace .page-heading p:last-child { line-height: 1.45; }
+}
 .smartmanager-theme main section,
 .smartmanager-theme main article,
 .smartmanager-theme main aside,

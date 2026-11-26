@@ -17,7 +17,11 @@ const rentalEquipmentSchema = new Schema({
   depositPerUnit: { type: Number, required: true, min: 0, default: 0 },
   itemType: { type: String, enum: ['main', 'accessory'], required: true, default: 'main' },
   compatibleWith: { type: String, trim: true, default: '' },
-  condition: { type: String, enum: ['good', 'maintenance', 'retired'], default: 'good' },
+  trackingMode: { type: String, enum: ['quantity', 'individual'], default: 'quantity' },
+  size: { type: String, trim: true, default: '' },
+  color: { type: String, trim: true, default: '' },
+  imageUrl: { type: String, trim: true, default: '' },
+  condition: { type: String, enum: ['good', 'cleaning', 'alteration', 'maintenance', 'retired'], default: 'good' },
 }, { timestamps: true, versionKey: false });
 rentalEquipmentSchema.index({ businessId: 1, code: 1 }, { unique: true });
 
